@@ -1,0 +1,37 @@
+*~
+.#*
+.git
+*#
+
+# os x stuff
+*Thumbs.db*
+*.DS_Store
+
+# Build artifacts
+build
+out
+target
+
+# Eclipse files
+.classpath
+.project
+.settings
+
+# Intellij IDEA files
+.idea/
+*.ipr
+*.iws
+*.iml
+*.idea
+workspace.xml
+atlassian-ide-plugin.xml
+
+# gradle
+.gradle
+
+# code review
+codereview.rc
+
+# local settings
+**/gradle.properties
+.java-version
