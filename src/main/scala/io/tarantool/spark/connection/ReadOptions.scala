@@ -4,7 +4,6 @@ import io.tarantool.driver.TarantoolServerAddress
 import io.tarantool.spark.partition.{TarantoolPartitioner, TarantoolPartitionerSinglePartition}
 
 case class ReadOptions(space: String,
-
                        partitioner: TarantoolPartitioner = new TarantoolPartitionerSinglePartition(),
                        hosts: Seq[TarantoolServerAddress],
                        credential: Option[Credential] = None,

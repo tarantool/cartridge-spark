@@ -32,7 +32,7 @@ class TarantoolConfigSpec extends FlatSpec with Matchers {
 
   it should "apply cluster settings" in {
     val sparkConf = new SparkConf()
-      .set("tarantool.isCluster", "1")
+      .set("tarantool.useClusterClient", "1")
       .set("tarantool.clusterSchemaFunction", "get_schema")
       .set("tarantool.clusterFunctionPrefix", "func_prefix")
 
@@ -50,7 +50,7 @@ class TarantoolConfigSpec extends FlatSpec with Matchers {
 
   it should "apply cluster settings with full cluster functions mapping" in {
     val sparkConf = new SparkConf()
-      .set("tarantool.isCluster", "1")
+      .set("tarantool.useClusterClient", "1")
       .set("tarantool.clusterSchemaFunction", "get_schema")
       .set("tarantool.deleteFunctionName", "func_del")
       .set("tarantool.insertFunctionName", "func_ins")
@@ -81,7 +81,7 @@ class TarantoolConfigSpec extends FlatSpec with Matchers {
 
   it should "apply cluster cluster with HttpDiscovery settings" in {
     val sparkConf = new SparkConf()
-      .set("tarantool.isCluster", "1")
+      .set("tarantool.useClusterClient", "1")
       .set("tarantool.clusterSchemaFunction", "get_schema")
       .set("tarantool.clusterFunctionPrefix", "func_prefix")
 
@@ -111,7 +111,7 @@ class TarantoolConfigSpec extends FlatSpec with Matchers {
 
   it should "apply cluster cluster with BinaryDiscovery settings" in {
     val sparkConf = new SparkConf()
-      .set("tarantool.isCluster", "1")
+      .set("tarantool.useClusterClient", "1")
       .set("tarantool.clusterSchemaFunction", "get_schema")
       .set("tarantool.clusterFunctionPrefix", "func_prefix")
 

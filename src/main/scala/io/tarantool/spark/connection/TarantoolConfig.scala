@@ -57,7 +57,7 @@ object TarantoolConfigBuilder {
   private val HOSTS = PREFIX + "hosts"
 
   //use cluster client
-  private val IS_CLUSTER = PREFIX + "isCluster"
+  private val USE_CLUSTER_CLIENT = PREFIX + "useClusterClient"
 
   //cluster discovery provider
   private val CLUSTER_DISCOVERY_PROVIDER = PREFIX + "discoveryProvider"
@@ -90,7 +90,7 @@ object TarantoolConfigBuilder {
   private val SPARK_REQUEST_TIMEOUT = SPARK_PREFIX + REQUEST_TIMEOUT
   private val SPARK_HOSTS = SPARK_PREFIX + HOSTS
 
-  private val SPARK_IS_CLUSTER = SPARK_PREFIX + IS_CLUSTER
+  private val SPARK_USE_CLUSTER_CLIENT = SPARK_PREFIX + USE_CLUSTER_CLIENT
 
   private val SPARK_CLUSTER_DISCOVERY_PROVIDER = SPARK_PREFIX + CLUSTER_DISCOVERY_PROVIDER
   private val SPARK_CLUSTER_DISCOVERY_CONNECT_TIMEOUT = SPARK_PREFIX + CLUSTER_DISCOVERY_CONNECT_TIMEOUT
@@ -124,8 +124,8 @@ object TarantoolConfigBuilder {
   }
 
   def parseHosts(cfg: SparkConf): Seq[TarantoolServerAddress] = {
-    var hosts = cfg.get(HOSTS, "").split(";")
-      .union(cfg.get(SPARK_HOSTS, "").split(";"))
+    var hosts = cfg.get(HOSTS, "").split(",")
+      .union(cfg.get(SPARK_HOSTS, "").split(","))
       .distinct
       .filter(!_.isEmpty)
       .map(a => new TarantoolServerAddress(a))
@@ -238,8 +238,8 @@ object TarantoolConfigBuilder {
   }
 
   def createReadOptions(space: String, cfg: SparkConf): ReadOptions = {
-    val isCluster = cfg.getOption(IS_CLUSTER).orElse(cfg.getOption(SPARK_IS_CLUSTER))
-    val clusterConfig = if (isCluster.isDefined && (isCluster.get == "true" || isCluster.get == "1")) {
+    val useClusterClient = cfg.getOption(USE_CLUSTER_CLIENT).orElse(cfg.getOption(SPARK_USE_CLUSTER_CLIENT))
+    val clusterConfig = if (useClusterClient.isDefined && (useClusterClient.get == "true" || useClusterClient.get == "1")) {
       parseClusterConfig(cfg)
     } else {
       None

@@ -17,7 +17,7 @@ trait SharedSparkContextClusterClient extends BeforeAndAfterAll { self: Suite =>
     conf.set("tarantool.username", "admin")
     conf.set("tarantool.password", "myapp-cluster-cookie")
 
-    conf.set("tarantool.isCluster", "1")
+    conf.set("tarantool.useClusterClient", "1")
     conf.set("tarantool.hosts", "127.0.0.1:3301")
 
     //conf.set("tarantool.discoveryProvider", "binary")
