@@ -1,23 +1,47 @@
 # tarantool-spark-connector
+
 Tarantool connector for Apache Spark
 
-## Linking
-You can link against this library (for Spark 2.2) in your program at the following coordinates:
-```
-groupId: io.tarantool
-artifactId: tarantool-spark-connector_2.11
-version: 2.2.0
+## Building
+
+The Tarantool Spark connector depends on the new asynchronous
+Tarantool driver:
+
+```xml
+<dependency>
+  <groupId>io.tarantool</groupId>
+  <artifactId>driver</artifactId>
+</dependency>
 ```
 
+Download it from [Github](https://github.com/akudiyar/tarantool-java-driver) (a temporary measure until the first release is published to Maven Central) and
+install using [Maven](https://maven.apache.org/) (run command `mvn install`).
+
+Then clone this project and build it using [sbt](https://www.scala-sbt.org/) (just run command `sbt test`).
+
+## Linking
+
+You can link against this library (for Spark 2.2) in your program at the following coordinates:
+
+```xml
+<dependency>
+  <groupId>io.tarantool</groupId>
+  <artifactId>tarantool-spark-connector</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+</dependency>
 ```
-libraryDependencies += "io.tarantool" %% "tarantool-spark-connector" % "2.2.0"
+
+or (for Scala)
+
+```
+libraryDependencies += "io.tarantool" %% "tarantool-spark-connector" % "1.0.0-SNAPSHOT"
 ```
 
 ## Version Compatibility
 
 | Connector | Apache Spark | Tarantool Server |
 | --------- | ------------ | ---------------- |
-| 2.2.x     | 2.2          | 1.1.x - 2.x      |
+| 1.x.x     | 2.2          | 1.10.x,  2.2.x-2.4.x   |
 
 ## Getting Started
 

@@ -1,10 +1,10 @@
 name := "tarantool-spark-connector"
 
-organization := "io.tarantool.driver"
-
-version := "2.2.0"
+version := "1.0.0-SNAPSHOT"
 
 description := "Tarantool Spark Connector"
+
+organization := "Tarantool"
 
 organizationHomepage := Some(url("https://www.tarantool.io"))
 
