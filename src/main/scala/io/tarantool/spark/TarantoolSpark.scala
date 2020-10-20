@@ -16,7 +16,7 @@ object TarantoolSpark {
    * @param sparkContext the sparkContext containing the Tarantool configuration
    * @param space        the space name to load data from
    */
-  def load[T: ClassTag](sparkContext: SparkContext, space: String): TarantoolRDD[T] = {
+  def load(sparkContext: SparkContext, space: String): TarantoolRDD = {
     load(sparkContext, TarantoolConfigBuilder.createReadOptions(space, sparkContext.getConf))
   }
 
@@ -26,8 +26,8 @@ object TarantoolSpark {
    * @param sparkContext the sparkContext containing the Tarantool configuration
    * @param options      the readOptions to load data from Tarantool
    */
-  def load[T: ClassTag](sparkContext: SparkContext, options: ReadOptions): TarantoolRDD[T] = {
-    new TarantoolRDD[T](sparkContext, options)
+  def load(sparkContext: SparkContext, options: ReadOptions): TarantoolRDD = {
+    new TarantoolRDD(sparkContext, options)
   }
 
   /**
@@ -35,11 +35,10 @@ object TarantoolSpark {
    *
    * @param sparkContext the sparkContext containing the Tarantool configuration
    * @param space        the space name to load data from
-   * @param clazz        the class of result type
    *
    */
-  def load[T](sparkContext: JavaSparkContext, space: String, clazz: Class[T]): TarantoolJavaRDD[T] = {
-    load(sparkContext, TarantoolConfigBuilder.createReadOptions(space, sparkContext.getConf), clazz)
+  def load(sparkContext: JavaSparkContext, space: String): TarantoolJavaRDD = {
+    load(sparkContext, TarantoolConfigBuilder.createReadOptions(space, sparkContext.getConf))
   }
 
   /**
@@ -48,11 +47,10 @@ object TarantoolSpark {
    * @param sparkContext the sparkContext containing the Tarantool configuration
    * @param options      the readOptions to load data from Tarantool
    * @param space        the space name to load data from
-   * @param clazz        the class of result type
    *
    */
-  def load[T](sparkContext: JavaSparkContext, space: String, options: ReadOptions, clazz: Class[T]): TarantoolJavaRDD[T] = {
-    load(sparkContext, options.copy(space = space, options), clazz)
+  def load(sparkContext: JavaSparkContext, space: String, options: ReadOptions): TarantoolJavaRDD = {
+    load(sparkContext, options.copy(space = space, options))
   }
 
   /**
@@ -60,10 +58,8 @@ object TarantoolSpark {
    *
    * @param sparkContext the sparkContext containing the Tarantool configuration
    * @param options      the readOptions to load data from Tarantool
-   * @param clazz        the class of result type
    */
-  def load[T](sparkContext: JavaSparkContext, options: ReadOptions, clazz: Class[T]): TarantoolJavaRDD[T] = {
-    implicit val classtag: ClassTag[T] = ClassTag(clazz)
+  def load(sparkContext: JavaSparkContext, options: ReadOptions): TarantoolJavaRDD = {
     load(sparkContext.sc, options).toJavaRDD()
   }
 }

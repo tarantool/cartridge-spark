@@ -14,9 +14,13 @@ crossScalaVersions := Seq("2.11.8", "2.10.6")
 libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % "2.2.0" % "provided",
   "org.apache.spark" %% "spark-sql" % "2.2.0" % "provided",
-  "io.tarantool" % "driver" % "1.0.0-SNAPSHOT",
-  "org.scalatest" %% "scalatest" % "2.2.5" % "test",
+  "io.tarantool" % "cartridge-driver" % "1.0.1-SNAPSHOT",
+  "org.scalatest" %% "scalatest" % "3.2.2" % "test",
+  "org.scalatest" %% "scalatest-flatspec" % "3.2.2" % "test",
+
   "junit" % "junit" % "4.12" % "test",
+  "com.dimafeng" %% "testcontainers-scala-scalatest" % "1.0.0-alpha1" % "test",
+  "io.tarantool" % "testcontainers-java-tarantool" % "0.2.0" % "test",
   "org.apache.logging.log4j" % "log4j-api" % "2.2"
 )
 
@@ -38,3 +42,5 @@ assemblyMergeStrategy in assembly := {
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
 }
+
+Test / fork := true

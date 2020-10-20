@@ -2,9 +2,11 @@ package io.tarantool.spark.connection
 
 import io.tarantool.driver.TarantoolServerAddress
 import org.apache.spark.SparkConf
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class TarantoolConfigSpec extends FlatSpec with Matchers {
+
+class TarantoolConfigSpec extends AnyFlatSpec with Matchers {
 
   it should "apply default settings" in {
     val sparkConf = new SparkConf()
@@ -42,39 +44,6 @@ class TarantoolConfigSpec extends FlatSpec with Matchers {
     tConf.credential should equal(None)
     tConf.timeouts should equal(Timeouts(None, None, None))
     tConf.clusterConfig should equal(Some(TarantoolClusterConfig(
-      operationsMapping = ClusterOperationsMapping(clusterSchemaFunc = "get_schema",
-        clusterFunctionsPrefix = Some("func_prefix")),
-      discoveryConfig = None
-    )))
-  }
-
-  it should "apply cluster settings with full cluster functions mapping" in {
-    val sparkConf = new SparkConf()
-      .set("tarantool.useClusterClient", "1")
-      .set("tarantool.clusterSchemaFunction", "get_schema")
-      .set("tarantool.deleteFunctionName", "func_del")
-      .set("tarantool.insertFunctionName", "func_ins")
-      .set("tarantool.replaceFunctionName", "func_rep")
-      .set("tarantool.selectFunctionName", "func_sel")
-      .set("tarantool.updateFunctionName", "func_upd")
-      .set("tarantool.upsertFunctionName", "func_ups")
-
-    val tConf: ReadOptions = TarantoolConfigBuilder.createReadOptions("space_2", sparkConf)
-    tConf.space should equal("space_2")
-    tConf.hosts should equal(Array(new TarantoolServerAddress("127.0.0.1:3301")))
-    tConf.credential should equal(None)
-    tConf.timeouts should equal(Timeouts(None, None, None))
-    tConf.clusterConfig should equal(Some(TarantoolClusterConfig(
-      operationsMapping = ClusterOperationsMapping(
-        clusterSchemaFunc = "get_schema",
-        clusterFunctionsPrefix = None,
-        deleteFunctionName = Some("func_del"),
-        insertFunctionName = Some("func_ins"),
-        replaceFunctionName = Some("func_rep"),
-        selectFunctionName = Some("func_sel"),
-        updateFunctionName = Some("func_upd"),
-        upsertFunctionName = Some("func_ups")
-      ),
       discoveryConfig = None
     )))
   }
@@ -83,7 +52,6 @@ class TarantoolConfigSpec extends FlatSpec with Matchers {
     val sparkConf = new SparkConf()
       .set("tarantool.useClusterClient", "1")
       .set("tarantool.clusterSchemaFunction", "get_schema")
-      .set("tarantool.clusterFunctionPrefix", "func_prefix")
 
       .set("tarantool.discoveryProvider", "http")
       .set("tarantool.discoverConnectTimeout", "50")
@@ -98,7 +66,6 @@ class TarantoolConfigSpec extends FlatSpec with Matchers {
     tConf.timeouts should equal(Timeouts(None, None, None))
 
     val clusterConfig = TarantoolClusterConfig(
-      operationsMapping = ClusterOperationsMapping(clusterSchemaFunc = "get_schema", clusterFunctionsPrefix = Some("func_prefix")),
       discoveryConfig = Some(ClusterDiscoveryConfig(
         provider = TarantoolDefaults.DISCOVERY_PROVIDER_HTTP,
         timeouts = ClusterDiscoveryTimeouts(Some(50), Some(60), Some(70)),
@@ -112,8 +79,6 @@ class TarantoolConfigSpec extends FlatSpec with Matchers {
   it should "apply cluster cluster with BinaryDiscovery settings" in {
     val sparkConf = new SparkConf()
       .set("tarantool.useClusterClient", "1")
-      .set("tarantool.clusterSchemaFunction", "get_schema")
-      .set("tarantool.clusterFunctionPrefix", "func_prefix")
 
       .set("tarantool.discoveryProvider", "binary")
       .set("tarantool.discoverConnectTimeout", "80")
@@ -129,7 +94,6 @@ class TarantoolConfigSpec extends FlatSpec with Matchers {
     tConf.timeouts should equal(Timeouts(None, None, None))
 
     val clusterConfig = TarantoolClusterConfig(
-      operationsMapping = ClusterOperationsMapping(clusterSchemaFunc = "get_schema", clusterFunctionsPrefix = Some("func_prefix")),
       discoveryConfig = Some(ClusterDiscoveryConfig(
         provider = TarantoolDefaults.DISCOVERY_PROVIDER_BINARY,
         timeouts = ClusterDiscoveryTimeouts(Some(80), Some(90), Some(100)),

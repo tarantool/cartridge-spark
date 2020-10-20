@@ -2,10 +2,11 @@ package io.tarantool.spark.connection
 
 import java.io.{Closeable, Serializable}
 
+import io.tarantool.driver.api.TarantoolClient
 import io.tarantool.driver.auth.{SimpleTarantoolCredentials, TarantoolCredentials}
-import io.tarantool.driver.cluster.{BinaryClusterDiscoveryEndpoint, BinaryDiscoveryClusterAddressProvider, ClusterOperationsMappingConfig, HTTPClusterDiscoveryEndpoint, HTTPDiscoveryClusterAddressProvider, TarantoolClusterDiscoveryConfig, TarantoolClusterDiscoveryEndpoint}
+import io.tarantool.driver.cluster.{BinaryClusterDiscoveryEndpoint, BinaryDiscoveryClusterAddressProvider, HTTPClusterDiscoveryEndpoint, HTTPDiscoveryClusterAddressProvider, TarantoolClusterDiscoveryConfig, TarantoolClusterDiscoveryEndpoint}
 import io.tarantool.driver.core.TarantoolConnectionSelectionStrategies.ParallelRoundRobinStrategyFactory
-import io.tarantool.driver.{ClusterTarantoolClient, StandaloneTarantoolClient, TarantoolClient, TarantoolClientConfig, TarantoolClusterAddressProvider}
+import io.tarantool.driver.{ClusterTarantoolClient, ProxyTarantoolClient, StandaloneTarantoolClient, TarantoolClientConfig, TarantoolClusterAddressProvider}
 import io.tarantool.spark.Logging
 
 /**
@@ -58,9 +59,6 @@ class TarantoolConnection extends Serializable with Closeable with Logging {
 
         if (cnf.clusterConfig.isDefined) {
           val clusterConfig = cnf.clusterConfig.get
-          val operationsMapping = clusterConfig.operationsMapping
-          val mappingConfig = getOperationMapping(operationsMapping)
-          builder.withClusterOperationsMapping(mappingConfig)
         }
 
         _tarantoolConfig = Option(builder.build())
@@ -80,13 +78,22 @@ class TarantoolConnection extends Serializable with Closeable with Logging {
             }
           }
 
+          var clusterTarantoolClient: Option[ClusterTarantoolClient] = None
           if (addressProvider.isDefined) {
-            _tarantoolClient = Option(new ClusterTarantoolClient(_tarantoolConfig.get,
-              ParallelRoundRobinStrategyFactory.INSTANCE, addressProvider.get))
+            clusterTarantoolClient = Option(new ClusterTarantoolClient(
+              _tarantoolConfig.get,
+              addressProvider.get,
+              ParallelRoundRobinStrategyFactory.INSTANCE)
+            )
           } else {
-            _tarantoolClient = Option(new ClusterTarantoolClient(_tarantoolConfig.get,
-              ParallelRoundRobinStrategyFactory.INSTANCE, new ClusterAddressProvider(cnf.hosts)))
+            clusterTarantoolClient = Option(new ClusterTarantoolClient(
+              _tarantoolConfig.get,
+              new ClusterAddressProvider(cnf.hosts),
+              ParallelRoundRobinStrategyFactory.INSTANCE)
+            )
           }
+
+          _tarantoolClient = Option(new ProxyTarantoolClient(clusterTarantoolClient.get))
 
           logInfo("Created ClusterTarantoolClient")
         } else {
@@ -96,25 +103,6 @@ class TarantoolConnection extends Serializable with Closeable with Logging {
       }
 
       _tarantoolClient.get
-    }
-  }
-
-  private def getOperationMapping(operationsMapping: ClusterOperationsMapping): ClusterOperationsMappingConfig = {
-    if (operationsMapping.clusterFunctionsPrefix.isDefined) {
-      new ClusterOperationsMappingConfig(
-        operationsMapping.clusterFunctionsPrefix.get,
-        operationsMapping.clusterSchemaFunc
-      )
-    } else {
-      ClusterOperationsMappingConfig.builder()
-        .withGetSchemaFunctionName(operationsMapping.clusterSchemaFunc)
-        .withDeleteFunctionName(operationsMapping.deleteFunctionName.get)
-        .withInsertFunctionName(operationsMapping.insertFunctionName.get)
-        .withReplaceFunctionName(operationsMapping.replaceFunctionName.get)
-        .withSelectFunctionName(operationsMapping.selectFunctionName.get)
-        .withUpdateFunctionName(operationsMapping.updateFunctionName.get)
-        .withUpsertFunctionName(operationsMapping.upsertFunctionName.get)
-        .build()
     }
   }
 

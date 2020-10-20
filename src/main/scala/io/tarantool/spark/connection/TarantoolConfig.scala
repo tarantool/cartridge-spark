@@ -10,7 +10,7 @@ case class Timeouts(connect: Option[Int], read: Option[Int], request: Option[Int
 
 case class ClusterDiscoveryTimeouts(connect: Option[Int], read: Option[Int], delay: Option[Int])
 
-case class TarantoolClusterConfig(operationsMapping: ClusterOperationsMapping, discoveryConfig: Option[ClusterDiscoveryConfig])
+case class TarantoolClusterConfig(discoveryConfig: Option[ClusterDiscoveryConfig])
 
 case class ClusterDiscoveryConfig(provider: String, timeouts: ClusterDiscoveryTimeouts,
                                   httpDiscoveryConfig: Option[ClusterHttpDiscoveryConfig],
@@ -19,15 +19,6 @@ case class ClusterDiscoveryConfig(provider: String, timeouts: ClusterDiscoveryTi
 case class ClusterHttpDiscoveryConfig(url: String)
 
 case class ClusterBinaryDiscoveryConfig(entryFunction: String, address: TarantoolServerAddress)
-
-case class ClusterOperationsMapping(clusterSchemaFunc: String,
-                                    clusterFunctionsPrefix: Option[String] = None,
-                                    deleteFunctionName: Option[String] = None,
-                                    insertFunctionName: Option[String] = None,
-                                    replaceFunctionName: Option[String] = None,
-                                    selectFunctionName: Option[String] = None,
-                                    updateFunctionName: Option[String] = None,
-                                    upsertFunctionName: Option[String] = None)
 
 trait TarantoolConfig {
   def space: String
@@ -70,17 +61,6 @@ object TarantoolConfigBuilder {
   private val CLUSTER_DISCOVERY_BINARY_ENTRY_FUNCTION = PREFIX + "discoveryBinaryEntryFunction"
   private val CLUSTER_DISCOVERY_BINARY_HOST = PREFIX + "discoveryBinaryHost"
 
-  //cluster operations mapping
-  private val CLUSTER_SCHEMA_FUNC_NAME = PREFIX + "clusterSchemaFunction"
-  private val CLUSTER_FUNC_PREFIX = PREFIX + "clusterFunctionPrefix"
-
-  private val DELETE_FUNC_NAME = PREFIX + "deleteFunctionName"
-  private val INSERT_FUNC_NAME = PREFIX + "insertFunctionName"
-  private val REPLACE_FUNC_NAME = PREFIX + "replaceFunctionName"
-  private val SELECT_FUNC_NAME = PREFIX + "selectFunctionName"
-  private val UPDATE_FUNC_NAME = PREFIX + "updateFunctionName"
-  private val UPSERT_FUNC_NAME = PREFIX + "upsertFunctionName"
-
   //options with spark. prefix
   private val SPARK_USERNAME = SPARK_PREFIX + USERNAME
   private val SPARK_PASSWORD = SPARK_PREFIX + PASSWORD
@@ -101,16 +81,6 @@ object TarantoolConfigBuilder {
 
   private val SPARK_CLUSTER_DISCOVERY_BINARY_ENTRY_FUNCTION = SPARK_PREFIX + CLUSTER_DISCOVERY_BINARY_ENTRY_FUNCTION
   private val SPARK_CLUSTER_DISCOVERY_BINARY_HOST = SPARK_PREFIX + CLUSTER_DISCOVERY_BINARY_HOST
-
-  private val SPARK_CLUSTER_SCHEMA = SPARK_PREFIX + CLUSTER_SCHEMA_FUNC_NAME
-  private val SPARK_CLUSTER_FUNC_PREFIX = SPARK_PREFIX + CLUSTER_FUNC_PREFIX
-
-  private val SPARK_DELETE_FUNC_NAME = SPARK_PREFIX + DELETE_FUNC_NAME
-  private val SPARK_INSERT_FUNC_NAME = SPARK_PREFIX + INSERT_FUNC_NAME
-  private val SPARK_REPLACE_FUNC_NAME = SPARK_PREFIX + REPLACE_FUNC_NAME
-  private val SPARK_SELECT_FUNC_NAME = SPARK_PREFIX + SELECT_FUNC_NAME
-  private val SPARK_UPDATE_FUNC_NAME = SPARK_PREFIX + UPDATE_FUNC_NAME
-  private val SPARK_UPSERT_FUNC_NAME = SPARK_PREFIX + UPSERT_FUNC_NAME
 
   def parseCredentials(cfg: SparkConf): Option[Credential] = {
     val username = cfg.getOption(USERNAME).orElse(cfg.getOption(SPARK_USERNAME))
@@ -148,21 +118,6 @@ object TarantoolConfigBuilder {
     cfg.getOption(name).orElse(cfg.getOption(nameWithSparkPrefix)).map(_.toInt)
   }
 
-  def parseClusterMapping(cnf: SparkConf): ClusterOperationsMapping = {
-    val funcPrefix = parseMappingValue(cnf, CLUSTER_FUNC_PREFIX, SPARK_CLUSTER_FUNC_PREFIX)
-
-    ClusterOperationsMapping(
-      clusterSchemaFunc = parseMappingValue(cnf, CLUSTER_SCHEMA_FUNC_NAME, SPARK_CLUSTER_SCHEMA, isRequire = true).get,
-      clusterFunctionsPrefix = funcPrefix,
-      deleteFunctionName = parseMappingValue(cnf, DELETE_FUNC_NAME, SPARK_DELETE_FUNC_NAME, funcPrefix.isEmpty),
-      insertFunctionName = parseMappingValue(cnf, INSERT_FUNC_NAME, SPARK_INSERT_FUNC_NAME, funcPrefix.isEmpty),
-      replaceFunctionName = parseMappingValue(cnf, REPLACE_FUNC_NAME, SPARK_REPLACE_FUNC_NAME, funcPrefix.isEmpty),
-      selectFunctionName = parseMappingValue(cnf, SELECT_FUNC_NAME, SPARK_SELECT_FUNC_NAME, funcPrefix.isEmpty),
-      updateFunctionName = parseMappingValue(cnf, UPDATE_FUNC_NAME, SPARK_UPDATE_FUNC_NAME, funcPrefix.isEmpty),
-      upsertFunctionName = parseMappingValue(cnf, UPSERT_FUNC_NAME, SPARK_UPSERT_FUNC_NAME, funcPrefix.isEmpty)
-    )
-  }
-
   def parseMappingValue(cfg: SparkConf, name: String, nameWithSparkPrefix: String, isRequire: Boolean = false): Option[String] = {
     val value = cfg.getOption(name).orElse(cfg.getOption(nameWithSparkPrefix))
     if (isRequire) {
@@ -172,8 +127,6 @@ object TarantoolConfigBuilder {
   }
 
   def parseClusterConfig(cfg: SparkConf): Option[TarantoolClusterConfig] = {
-    val clusterOperationsMapping = parseClusterMapping(cfg)
-
     val discoveryProvider = cfg.getOption(CLUSTER_DISCOVERY_PROVIDER).orElse(cfg.getOption(SPARK_CLUSTER_DISCOVERY_PROVIDER))
 
     val discoveryConfig = if (discoveryProvider.isDefined) {
@@ -204,7 +157,7 @@ object TarantoolConfigBuilder {
       None
     }
 
-    Some(TarantoolClusterConfig(clusterOperationsMapping, discoveryConfig))
+    Some(TarantoolClusterConfig(discoveryConfig))
   }
 
   def parseDiscoveryTimeouts(cfg: SparkConf): ClusterDiscoveryTimeouts = {

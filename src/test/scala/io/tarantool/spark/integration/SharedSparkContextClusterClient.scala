@@ -18,14 +18,9 @@ trait SharedSparkContextClusterClient extends BeforeAndAfterAll { self: Suite =>
     conf.set("tarantool.password", "myapp-cluster-cookie")
 
     conf.set("tarantool.useClusterClient", "1")
-    conf.set("tarantool.hosts", "127.0.0.1:3301")
-
-    //conf.set("tarantool.discoveryProvider", "binary")
-    //conf.set("tarantool.discoveryBinaryEntryFunction", "get_routers_list")
-    //conf.set("tarantool.discoveryBinaryHost", "127.0.0.1:3301")
-
-    conf.set("tarantool.clusterSchemaFunction", "elect_cluster_api_get_schema")
-    conf.set("tarantool.clusterFunctionPrefix", "elect_cluster_api")
+    conf.set("tarantool.discoveryProvider", "binary")
+    conf.set("tarantool.discoveryBinaryHost", "127.0.0.1:3301")
+    conf.set("tarantool.discoveryBinaryEntryFunction", "get_routers")
 
   override def beforeAll() {
     super.beforeAll()
