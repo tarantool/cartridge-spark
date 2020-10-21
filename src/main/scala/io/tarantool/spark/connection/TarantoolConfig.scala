@@ -1,7 +1,8 @@
 package io.tarantool.spark.connection
 
 import io.tarantool.driver.TarantoolServerAddress
-import io.tarantool.spark.partition.TarantoolPartitioner
+import io.tarantool.spark.connection.TarantoolDefaults.DEFAULT_BATCH_SIZE
+import io.tarantool.spark.partition.{TarantoolPartitioner, TarantoolPartitionerSinglePartition}
 import org.apache.spark.SparkConf
 
 case class Credential(username: String, password: String)
@@ -46,6 +47,7 @@ object TarantoolConfigBuilder {
   private val READ_TIMEOUT = PREFIX + "readTimeout"
   private val REQUEST_TIMEOUT = PREFIX + "requestTimeout"
   private val HOSTS = PREFIX + "hosts"
+  private val BATCH_SIZE = PREFIX + "batchSize"
 
   //use cluster client
   private val USE_CLUSTER_CLIENT = PREFIX + "useClusterClient"
@@ -69,6 +71,7 @@ object TarantoolConfigBuilder {
   private val SPARK_READ_TIMEOUT = SPARK_PREFIX + READ_TIMEOUT
   private val SPARK_REQUEST_TIMEOUT = SPARK_PREFIX + REQUEST_TIMEOUT
   private val SPARK_HOSTS = SPARK_PREFIX + HOSTS
+  private val SPARK_BATCH_SIZE = SPARK_PREFIX + BATCH_SIZE
 
   private val SPARK_USE_CLUSTER_CLIENT = SPARK_PREFIX + USE_CLUSTER_CLIENT
 
@@ -108,22 +111,14 @@ object TarantoolConfigBuilder {
 
   def parseTimeouts(cfg: SparkConf): Timeouts = {
     Timeouts(
-      parseTimeout(cfg, CONNECT_TIMEOUT, SPARK_CONNECT_TIMEOUT),
-      parseTimeout(cfg, READ_TIMEOUT, SPARK_READ_TIMEOUT),
-      parseTimeout(cfg, REQUEST_TIMEOUT, SPARK_REQUEST_TIMEOUT)
+      parseInt(cfg, CONNECT_TIMEOUT, SPARK_CONNECT_TIMEOUT),
+      parseInt(cfg, READ_TIMEOUT, SPARK_READ_TIMEOUT),
+      parseInt(cfg, REQUEST_TIMEOUT, SPARK_REQUEST_TIMEOUT)
     )
   }
 
-  def parseTimeout(cfg: SparkConf, name: String, nameWithSparkPrefix: String): Option[Int] = {
+  def parseInt(cfg: SparkConf, name: String, nameWithSparkPrefix: String): Option[Int] = {
     cfg.getOption(name).orElse(cfg.getOption(nameWithSparkPrefix)).map(_.toInt)
-  }
-
-  def parseMappingValue(cfg: SparkConf, name: String, nameWithSparkPrefix: String, isRequire: Boolean = false): Option[String] = {
-    val value = cfg.getOption(name).orElse(cfg.getOption(nameWithSparkPrefix))
-    if (isRequire) {
-      require(value.isDefined, s"$name cannot be null")
-    }
-    value
   }
 
   def parseClusterConfig(cfg: SparkConf): Option[TarantoolClusterConfig] = {
@@ -162,9 +157,9 @@ object TarantoolConfigBuilder {
 
   def parseDiscoveryTimeouts(cfg: SparkConf): ClusterDiscoveryTimeouts = {
     ClusterDiscoveryTimeouts(
-      parseTimeout(cfg, CLUSTER_DISCOVERY_CONNECT_TIMEOUT, SPARK_CLUSTER_DISCOVERY_CONNECT_TIMEOUT),
-      parseTimeout(cfg, CLUSTER_DISCOVERY_READ_TIMEOUT, SPARK_CLUSTER_DISCOVERY_READ_TIMEOUT),
-      parseTimeout(cfg, CLUSTER_DISCOVERY_DELAY, SPARK_CLUSTER_DISCOVERY_DELAY)
+      parseInt(cfg, CLUSTER_DISCOVERY_CONNECT_TIMEOUT, SPARK_CLUSTER_DISCOVERY_CONNECT_TIMEOUT),
+      parseInt(cfg, CLUSTER_DISCOVERY_READ_TIMEOUT, SPARK_CLUSTER_DISCOVERY_READ_TIMEOUT),
+      parseInt(cfg, CLUSTER_DISCOVERY_DELAY, SPARK_CLUSTER_DISCOVERY_DELAY)
     )
   }
 
@@ -190,7 +185,7 @@ object TarantoolConfigBuilder {
     }
   }
 
-  def createReadOptions(space: String, cfg: SparkConf): ReadOptions = {
+  def createReadOptions(space: String, cfg: SparkConf, partitioner: TarantoolPartitioner = new TarantoolPartitionerSinglePartition()): ReadOptions = {
     val useClusterClient = cfg.getOption(USE_CLUSTER_CLIENT).orElse(cfg.getOption(SPARK_USE_CLUSTER_CLIENT))
     val clusterConfig = if (useClusterClient.isDefined && (useClusterClient.get == "true" || useClusterClient.get == "1")) {
       parseClusterConfig(cfg)
@@ -199,6 +194,8 @@ object TarantoolConfigBuilder {
     }
 
     ReadOptions(space = space,
+      partitioner = partitioner,
+      batchSize = parseInt(cfg, BATCH_SIZE, SPARK_BATCH_SIZE).getOrElse(DEFAULT_BATCH_SIZE),
       hosts = parseHosts(cfg),
       credential = parseCredentials(cfg),
       timeouts = parseTimeouts(cfg),

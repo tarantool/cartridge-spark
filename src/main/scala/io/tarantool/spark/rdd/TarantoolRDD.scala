@@ -17,20 +17,35 @@ class TarantoolRDD(@transient override val sparkContext: SparkContext,
                                 val options: ReadOptions) extends RDD[TarantoolTuple](sparkContext, Nil) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[TarantoolTuple] = {
-    val client = TarantoolConnection().client(split.asInstanceOf[TarantoolPartition].options)
+    val partitionReadOptions: ReadOptions = split.asInstanceOf[TarantoolPartition].options
+    val client = TarantoolConnection().client(partitionReadOptions)
 
     context.addTaskCompletionListener((ctx: TaskContext) => {
       logDebug("Task completed closing the Tarantool connection")
       Try(client.close())
     })
 
-    createCursor(client, options).asScala
+    createCursor(client, partitionReadOptions).asScala
   }
 
   private def createCursor(client: TarantoolClient, readOptions: ReadOptions): TarantoolCursor[TarantoolTuple] = {
     val tarantoolSpace = client.space(readOptions.space)
 
-    tarantoolSpace.cursor(Conditions.any(), new TarantoolCursorOptions())
+    val conditions = Conditions.any()
+
+    if (readOptions.toBucketId.isDefined && readOptions.fromBucketId.isDefined) {
+      conditions.andEquals("bucket_id", readOptions.fromBucketId.get)
+    } else {
+      if (readOptions.fromBucketId.isDefined) {
+        conditions.andGreaterOrEquals("bucket_id", readOptions.fromBucketId.get)
+      }
+
+      if (readOptions.toBucketId.isDefined) {
+        conditions.andLessOrEquals("bucket_id", readOptions.toBucketId.get)
+      }
+    }
+
+    tarantoolSpace.cursor(conditions, new TarantoolCursorOptions(readOptions.batchSize))
   }
 
   override protected def getPartitions: Array[Partition] =

@@ -1,7 +1,6 @@
 package io.tarantool.spark.integration
 
 import io.tarantool.driver.api.TarantoolClient
-import io.tarantool.driver.api.tuple.TarantoolTuple
 import io.tarantool.spark.TarantoolSpark
 import io.tarantool.spark.connection.{TarantoolConfigBuilder, TarantoolConnection}
 import org.scalatest.flatspec.AnyFlatSpec

@@ -36,7 +36,6 @@ class TarantoolConfigSpec extends AnyFlatSpec with Matchers {
     val sparkConf = new SparkConf()
       .set("tarantool.useClusterClient", "1")
       .set("tarantool.clusterSchemaFunction", "get_schema")
-      .set("tarantool.clusterFunctionPrefix", "func_prefix")
 
     val tConf: ReadOptions = TarantoolConfigBuilder.createReadOptions("space_2", sparkConf)
     tConf.space should equal("space_2")

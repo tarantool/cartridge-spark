@@ -50,7 +50,7 @@ object TarantoolSpark {
    *
    */
   def load(sparkContext: JavaSparkContext, space: String, options: ReadOptions): TarantoolJavaRDD = {
-    load(sparkContext, options.copy(space = space, options))
+    load(sparkContext, options.copy(space = space))
   }
 
   /**

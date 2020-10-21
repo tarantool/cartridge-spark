@@ -57,10 +57,6 @@ class TarantoolConnection extends Serializable with Closeable with Logging {
           builder.withRequestTimeout(cnf.timeouts.request.get)
         }
 
-        if (cnf.clusterConfig.isDefined) {
-          val clusterConfig = cnf.clusterConfig.get
-        }
-
         _tarantoolConfig = Option(builder.build())
       }
 

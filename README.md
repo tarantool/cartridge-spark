@@ -63,7 +63,7 @@ libraryDependencies += "io.tarantool" %% "tarantool-spark-connector" % "1.0.0-SN
 | tarantool.discoveryHttpUrl              | discovery endpoint URI                      |                 |
 | tarantool.discoveryBinaryEntryFunction  | binary discovery function                   |                 |
 | tarantool.discoveryBinaryHost           | binary discovery tarantool host address     |                 |
-  
+| tarantool.batchSize                     | batch size for cursor                       | 1000            |
 
 ### Setup SparkContext
 ```scala
@@ -97,14 +97,14 @@ JavaSparkContext sc = new JavaSparkContext(conf);
             ...
   val sc = new SparkContext(conf)
 
-  val rdd = TarantoolSpark.load[TarantoolTuple](sc, "_spark_test_space")
+  val rdd = TarantoolSpark.load[TarantoolTuple](sc, "space_name")
 ```
 
 ```java
     SparkConf conf = new SparkConf()
     JavaSparkContext sc = new JavaSparkContext(conf);
 
-    TarantoolJavaRDD[TarantoolTuple] rdd = TarantoolSpark.load[TarantoolTuple](sc, "_spark_test_space")
+    TarantoolJavaRDD[TarantoolTuple] rdd = TarantoolSpark.load[TarantoolTuple](sc, "space_name")
 ```
 
 ## Learn more

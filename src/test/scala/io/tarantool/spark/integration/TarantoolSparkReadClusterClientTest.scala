@@ -1,9 +1,9 @@
 package io.tarantool.spark.integration
 
 import io.tarantool.driver.api.TarantoolClient
-import io.tarantool.driver.api.tuple.TarantoolTuple
 import io.tarantool.spark.TarantoolSpark
 import io.tarantool.spark.connection.{TarantoolConfigBuilder, TarantoolConnection}
+import io.tarantool.spark.partition.TarantoolPartitionerByBucketId
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -24,4 +24,10 @@ class TarantoolSparkReadClusterClientTest extends AnyFlatSpec with Matchers with
     rdd.count() > 0 should equal(true)
   }
 
+  it should "Load space using bucketPartitioner" in {
+    val rdd = TarantoolSpark.load(sc, TarantoolConfigBuilder.createReadOptions(SPACE_NAME,
+      sc.getConf, new TarantoolPartitionerByBucketId("get_bucket_count", 100)))
+
+    rdd.count() > 0 should equal(true)
+  }
 }
