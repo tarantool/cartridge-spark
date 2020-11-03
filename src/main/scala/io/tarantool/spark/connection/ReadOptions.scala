@@ -1,22 +1,31 @@
 package io.tarantool.spark.connection
 
 import io.tarantool.driver.TarantoolServerAddress
-import io.tarantool.spark.partition.{TarantoolPartitioner, TarantoolPartitionerSinglePartition}
+import io.tarantool.spark.partition.{
+  TarantoolPartitioner,
+  TarantoolPartitionerSinglePartition
+}
 
 case class ReadOptions(space: String,
-                       partitioner: TarantoolPartitioner = new TarantoolPartitionerSinglePartition(),
+                       partitioner: TarantoolPartitioner =
+                         new TarantoolPartitionerSinglePartition(),
                        hosts: Seq[TarantoolServerAddress],
-                       credential: Option[Credential] = None,
+                       credentials: Option[Credentials] = None,
                        timeouts: Timeouts = Timeouts(None, None, None),
-                       clusterConfig: Option[TarantoolClusterConfig] = None) extends TarantoolConfig {
+                       useProxyClient: Boolean,
+                       clusterDiscoveryConfig: Option[ClusterDiscoveryConfig] =
+                         None)
+    extends TarantoolConfig {
 
   def copy(space: String, readOptions: ReadOptions): ReadOptions = {
-    ReadOptions(space = space,
+    ReadOptions(
+      space = space,
       partitioner = readOptions.partitioner,
       hosts = readOptions.hosts,
-      credential = readOptions.credential,
+      credentials = readOptions.credentials,
       timeouts = readOptions.timeouts,
-      clusterConfig = readOptions.clusterConfig
+      useProxyClient = readOptions.useProxyClient,
+      clusterDiscoveryConfig = readOptions.clusterDiscoveryConfig
     )
   }
 }

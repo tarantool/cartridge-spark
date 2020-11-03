@@ -1,6 +1,5 @@
 package io.tarantool.spark.integration
 
-import io.tarantool.driver.api.TarantoolClient
 import io.tarantool.driver.api.tuple.TarantoolTuple
 import io.tarantool.spark.TarantoolSpark
 import io.tarantool.spark.connection.{
@@ -9,19 +8,18 @@ import io.tarantool.spark.connection.{
 }
 import org.scalatest._
 
-class TarantoolSparkReadClusterClientTest
+class TarantoolSparkReadProxyClientTest
     extends FunSuite
     with Matchers
     with BeforeAndAfterAll
     with BeforeAndAfterEach
-    with SharedSparkContextClusterClient {
+    with SharedSparkContextProxyClient {
 
   private val SPACE_NAME: String = "test_space"
-  private var tarantoolClient: TarantoolClient = _
 
   test("Create connection") {
     val tarantoolConnection = TarantoolConnection()
-    tarantoolClient = tarantoolConnection.client(
+    val tarantoolClient = tarantoolConnection.client(
       TarantoolConfigBuilder.createReadOptions(SPACE_NAME, sc.getConf))
     val spaceHolder = tarantoolClient.metadata.getSpaceByName(SPACE_NAME)
     spaceHolder.isPresent should equal(true)
