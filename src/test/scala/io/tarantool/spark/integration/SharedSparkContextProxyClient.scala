@@ -1,10 +1,11 @@
 package io.tarantool.spark.integration
 
 import org.apache.spark.{SparkConf, SparkContext}
-import org.scalatest.{BeforeAndAfterAll, Suite}
+import org.scalatest.Suite
 
 /** Shares a local `SparkContext` between all tests cases */
-trait SharedSparkContextStandaloneClient extends BeforeAndAfterAll { self: Suite =>
+trait SharedSparkContextProxyClient extends SharedCartridgeContainer {
+  self: Suite =>
 
   private val master = "local"
   private val appName = "tarantool-spark-test"
@@ -14,11 +15,17 @@ trait SharedSparkContextStandaloneClient extends BeforeAndAfterAll { self: Suite
   val conf: SparkConf = new SparkConf(false)
     .setMaster(master)
     .setAppName(appName)
-    conf.set("tarantool.username", "guest")
-    conf.set("tarantool.password", "")
 
   override def beforeAll() {
     super.beforeAll()
+    withContainers(container => {
+      conf.set("tarantool.username", container.username)
+      conf.set("tarantool.password", container.password)
+
+      conf.set("tarantool.useProxyClient", "1")
+      conf.set("tarantool.hosts",
+               container.host + ":" + String.valueOf(container.port))
+    })
     _sc = new SparkContext(conf)
   }
 

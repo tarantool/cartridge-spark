@@ -3,18 +3,18 @@ package io.tarantool.spark
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
- * Utility trait for classes that want to log data. Creates a SLF4J logger for the class and allows
- * logging messages at different levels using methods that only evaluate parameters lazily if the
- * log level is enabled.
- *
- *
- * This is a copy of what Spark Previously held in org.apache.spark.Logging. That class is
- * now private so we will expose similar functionality here.
- */
+  * Utility trait for classes that want to log data. Creates a SLF4J logger for the class and allows
+  * logging messages at different levels using methods that only evaluate parameters lazily if the
+  * log level is enabled.
+  *
+  *
+  * This is a copy of what Spark Previously held in org.apache.spark.Logging. That class is
+  * now private so we will expose similar functionality here.
+  */
 trait Logging {
   // Make the log field transient so that objects with Logging can
   // be serialized and used on another machine
-  @transient private var _log : Logger = _
+  @transient private var _log: Logger = _
 
   protected def logName: String = {
     // Ignore trailing $'s in the class names for Scala objects

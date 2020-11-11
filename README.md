@@ -1,23 +1,10 @@
-# tarantool-spark-connector
+# cartridge-spark
 
-Tarantool connector for Apache Spark
+Apache Spark connector for Tarantool and Tarantool Cartridge
 
 ## Building
 
-The Tarantool Spark connector depends on the new asynchronous
-Tarantool driver:
-
-```xml
-<dependency>
-  <groupId>io.tarantool</groupId>
-  <artifactId>driver</artifactId>
-</dependency>
-```
-
-Download it from [Github](https://github.com/akudiyar/tarantool-java-driver) (a temporary measure until the first release is published to Maven Central) and
-install using [Maven](https://maven.apache.org/) (run command `mvn install`).
-
-Then clone this project and build it using [sbt](https://www.scala-sbt.org/) (just run command `sbt test`).
+Clone this project and build it using [sbt](https://www.scala-sbt.org/) (just run command `sbt test`).
 
 ## Linking
 
@@ -26,7 +13,7 @@ You can link against this library (for Spark 2.2) in your program at the followi
 ```xml
 <dependency>
   <groupId>io.tarantool</groupId>
-  <artifactId>tarantool-spark-connector</artifactId>
+  <artifactId>cartridge-spark</artifactId>
   <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
@@ -34,7 +21,7 @@ You can link against this library (for Spark 2.2) in your program at the followi
 or (for Scala)
 
 ```
-libraryDependencies += "io.tarantool" %% "tarantool-spark-connector" % "1.0.0-SNAPSHOT"
+libraryDependencies += "io.tarantool" %% "cartridge-spark" % "1.0.0-SNAPSHOT"
 ```
 
 ## Version Compatibility
@@ -49,20 +36,21 @@ libraryDependencies += "io.tarantool" %% "tarantool-spark-connector" % "1.0.0-SN
 
 | property-key                            | description                                 | default value   |
 | --------------------------------------- | ------------------------------------------- | --------------- |
-| tarantool.hosts                         | comma separated list of Tarantool hosts     | 127.0.0.1:3301  |
-| tarantool.username                      | basic authentication user                   | guest           |
-| tarantool.password                      | basic authentication password               |                 |
-| tarantool.connectTimeout                | server connect timeout, in milliseconds     | 1000            |
-| tarantool.readTimeout                   | socket read timeout, in milliseconds        | 1000            |
-| tarantool.requestTimeout                | request completion timeout, in milliseconds | 2000            |
-| tarantool.useClusterClient              | use TarantoolClusterClient                  | false           |
-| tarantool.discoveryProvider             | service discovery provider (http or binary) |                 |
-| tarantool.discoverConnectTimeout        | service discovery connect timeout, in ms    | 1000            |  
-| tarantool.discoveryReadTimeout          | service discovery read timeout, in ms       | 1000            |
-| tarantool.discoveryDelay                | cluster discovery delay, ms                 | 60000           |
-| tarantool.discoveryHttpUrl              | discovery endpoint URI                      |                 |
-| tarantool.discoveryBinaryEntryFunction  | binary discovery function                   |                 |
-| tarantool.discoveryBinaryHost           | binary discovery tarantool host address     |                 |
+| tarantool.hosts                         | comma separated list of Tarantool hosts                   | 127.0.0.1:3301  |
+| tarantool.username                      | basic authentication user                                 | guest           |
+| tarantool.password                      | basic authentication password                             |                 |
+| tarantool.connectTimeout                | server connect timeout, in milliseconds                   | 1000            |
+| tarantool.readTimeout                   | socket read timeout, in milliseconds                      | 1000            |
+| tarantool.requestTimeout                | request completion timeout, in milliseconds               | 2000            |
+| tarantool.useProxyClient                | use ProxyTarantoolClient for working with [tarantool/crud](https://github.com/tarantool/crud) | false           |
+| tarantool.useClusterDiscovery           | use cluster discovery (dynamic receiving of the list of hosts) | false           |
+| tarantool.discoveryProvider             | service discovery provider ("http" or "binary")           |                 |
+| tarantool.discoveryConnectTimeout       | service discovery connect timeout, in ms                  | 1000            |
+| tarantool.discoveryReadTimeout          | service discovery read timeout, in ms                     | 1000            |
+| tarantool.discoveryDelay                | cluster discovery delay, ms                               | 60000           |
+| tarantool.discoveryHttpUrl              | discovery endpoint URI                                    |                 |
+| tarantool.discoveryBinaryEntryFunction  | binary discovery function name                            |                 |
+| tarantool.discoveryBinaryHost           | binary discovery Tarantool host address                   |                 |
   
 
 ### Setup SparkContext
@@ -97,14 +85,14 @@ JavaSparkContext sc = new JavaSparkContext(conf);
             ...
   val sc = new SparkContext(conf)
 
-  val rdd = TarantoolSpark.load[TarantoolTuple](sc, "_spark_test_space")
+  val rdd = TarantoolSpark.load[TarantoolTuple](sc, "test_space")
 ```
 
 ```java
     SparkConf conf = new SparkConf()
     JavaSparkContext sc = new JavaSparkContext(conf);
 
-    TarantoolJavaRDD[TarantoolTuple] rdd = TarantoolSpark.load[TarantoolTuple](sc, "_spark_test_space")
+    TarantoolJavaRDD[TarantoolTuple] rdd = TarantoolSpark.load[TarantoolTuple](sc, "test_space")
 ```
 
 ## Learn more

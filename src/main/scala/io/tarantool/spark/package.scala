@@ -1,4 +1,3 @@
 package io.tarantool
 
-package object spark {
-}
+package object spark {}

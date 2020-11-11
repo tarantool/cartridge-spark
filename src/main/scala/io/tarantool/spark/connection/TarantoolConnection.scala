@@ -2,16 +2,32 @@ package io.tarantool.spark.connection
 
 import java.io.{Closeable, Serializable}
 
-import io.tarantool.driver.auth.{SimpleTarantoolCredentials, TarantoolCredentials}
-import io.tarantool.driver.cluster.{BinaryClusterDiscoveryEndpoint, BinaryDiscoveryClusterAddressProvider, ClusterOperationsMappingConfig, HTTPClusterDiscoveryEndpoint, HTTPDiscoveryClusterAddressProvider, TarantoolClusterDiscoveryConfig, TarantoolClusterDiscoveryEndpoint}
+import io.tarantool.driver.api.TarantoolClient
+import io.tarantool.driver.auth.{
+  SimpleTarantoolCredentials,
+  TarantoolCredentials
+}
+import io.tarantool.driver.cluster.{
+  BinaryClusterDiscoveryEndpoint,
+  BinaryDiscoveryClusterAddressProvider,
+  HTTPClusterDiscoveryEndpoint,
+  HTTPDiscoveryClusterAddressProvider,
+  TarantoolClusterDiscoveryConfig,
+  TarantoolClusterDiscoveryEndpoint
+}
 import io.tarantool.driver.core.TarantoolConnectionSelectionStrategies.ParallelRoundRobinStrategyFactory
-import io.tarantool.driver.{ClusterTarantoolClient, StandaloneTarantoolClient, TarantoolClient, TarantoolClientConfig, TarantoolClusterAddressProvider}
+import io.tarantool.driver.{
+  ClusterTarantoolClient,
+  ProxyTarantoolClient,
+  TarantoolClientConfig,
+  TarantoolClusterAddressProvider
+}
 import io.tarantool.spark.Logging
 
 /**
- * The TarantoolConnector companion object
- *
- */
+  * The TarantoolConnector companion object
+  *
+  */
 object TarantoolConnection {
   lazy val connection = new TarantoolConnection()
 
@@ -19,11 +35,11 @@ object TarantoolConnection {
 }
 
 /**
- * The TarantoolConnector
- *
- * Connects Spark to Tarantool
- *
- */
+  * The TarantoolConnector
+  *
+  * Connects Spark to Tarantool
+  *
+  */
 class TarantoolConnection extends Serializable with Closeable with Logging {
 
   @transient var _tarantoolConfig: Option[TarantoolClientConfig] = None
@@ -37,8 +53,9 @@ class TarantoolConnection extends Serializable with Closeable with Logging {
       if (_tarantoolConfig.isEmpty) {
         val builder = new TarantoolClientConfig.Builder()
 
-        val credentials = if (cnf.credential.isDefined) {
-          new SimpleTarantoolCredentials(cnf.credential.get.username, cnf.credential.get.password)
+        val credentials = if (cnf.credentials.isDefined) {
+          new SimpleTarantoolCredentials(cnf.credentials.get.username,
+                                         cnf.credentials.get.password)
         } else {
           new SimpleTarantoolCredentials()
         }
@@ -56,72 +73,53 @@ class TarantoolConnection extends Serializable with Closeable with Logging {
           builder.withRequestTimeout(cnf.timeouts.request.get)
         }
 
-        if (cnf.clusterConfig.isDefined) {
-          val clusterConfig = cnf.clusterConfig.get
-          val operationsMapping = clusterConfig.operationsMapping
-          val mappingConfig = getOperationMapping(operationsMapping)
-          builder.withClusterOperationsMapping(mappingConfig)
-        }
-
         _tarantoolConfig = Option(builder.build())
       }
 
       if (_tarantoolClient.isEmpty) {
-        if (cnf.clusterConfig.isDefined) {
-          val clusterConfig = cnf.clusterConfig.get
+        var addressProvider: Option[TarantoolClusterAddressProvider] = None
 
-          var addressProvider: Option[TarantoolClusterAddressProvider] = None
-
-          if (clusterConfig.discoveryConfig.isDefined) {
-            addressProvider = if (clusterConfig.discoveryConfig.get.provider == TarantoolDefaults.DISCOVERY_PROVIDER_HTTP) {
-              Some(getHttpProvider(cnf))
+        if (cnf.clusterDiscoveryConfig.isDefined) {
+          addressProvider =
+            if (cnf.clusterDiscoveryConfig.get.provider == TarantoolDefaults.DISCOVERY_PROVIDER_HTTP) {
+              Some(getHttpProvider(cnf.clusterDiscoveryConfig.get))
             } else {
-              Some(getBinaryProvider(cnf, _tarantoolConfig.get.getCredentials))
+              Some(
+                getBinaryProvider(cnf.clusterDiscoveryConfig.get,
+                                  _tarantoolConfig.get.getCredentials))
             }
-          }
-
-          if (addressProvider.isDefined) {
-            _tarantoolClient = Option(new ClusterTarantoolClient(_tarantoolConfig.get,
-              ParallelRoundRobinStrategyFactory.INSTANCE, addressProvider.get))
-          } else {
-            _tarantoolClient = Option(new ClusterTarantoolClient(_tarantoolConfig.get,
-              ParallelRoundRobinStrategyFactory.INSTANCE, new ClusterAddressProvider(cnf.hosts)))
-          }
-
-          logInfo("Created ClusterTarantoolClient")
-        } else {
-          _tarantoolClient = Option(new StandaloneTarantoolClient(_tarantoolConfig.get, cnf.hosts.head))
-          logInfo("Created StandaloneTarantoolClient")
         }
+
+        if (addressProvider.isDefined) {
+          _tarantoolClient = Option(
+            new ClusterTarantoolClient(
+              _tarantoolConfig.get,
+              addressProvider.get,
+              ParallelRoundRobinStrategyFactory.INSTANCE))
+        } else {
+          _tarantoolClient = Option(
+            new ClusterTarantoolClient(
+              _tarantoolConfig.get,
+              new ClusterAddressProvider(cnf.hosts),
+              ParallelRoundRobinStrategyFactory.INSTANCE))
+        }
+
+        if (cnf.useProxyClient) {
+          _tarantoolClient =
+            Option(new ProxyTarantoolClient(_tarantoolClient.get))
+        }
+
+        logInfo("Created ClusterTarantoolClient, hosts = " + cnf.hosts)
       }
 
       _tarantoolClient.get
     }
   }
 
-  private def getOperationMapping(operationsMapping: ClusterOperationsMapping): ClusterOperationsMappingConfig = {
-    if (operationsMapping.clusterFunctionsPrefix.isDefined) {
-      new ClusterOperationsMappingConfig(
-        operationsMapping.clusterFunctionsPrefix.get,
-        operationsMapping.clusterSchemaFunc
-      )
-    } else {
-      ClusterOperationsMappingConfig.builder()
-        .withGetSchemaFunctionName(operationsMapping.clusterSchemaFunc)
-        .withDeleteFunctionName(operationsMapping.deleteFunctionName.get)
-        .withInsertFunctionName(operationsMapping.insertFunctionName.get)
-        .withReplaceFunctionName(operationsMapping.replaceFunctionName.get)
-        .withSelectFunctionName(operationsMapping.selectFunctionName.get)
-        .withUpdateFunctionName(operationsMapping.updateFunctionName.get)
-        .withUpsertFunctionName(operationsMapping.upsertFunctionName.get)
-        .build()
-    }
-  }
-
-  private def getBinaryProvider(tarantoolConfig: TarantoolConfig, credentials: TarantoolCredentials) = {
-    val clusterConfig = tarantoolConfig.clusterConfig.get
-    val discoveryConfig = clusterConfig.discoveryConfig.get
-    val binaryDiscoveryConfig: ClusterBinaryDiscoveryConfig = discoveryConfig.binaryDiscoveryConfig.get
+  private def getBinaryProvider(discoveryConfig: ClusterDiscoveryConfig,
+                                credentials: TarantoolCredentials) = {
+    val binaryDiscoveryConfig: ClusterBinaryDiscoveryConfig =
+      discoveryConfig.binaryDiscoveryConfig.get
 
     val endpoint = new BinaryClusterDiscoveryEndpoint.Builder()
       .withCredentials(credentials)
@@ -129,23 +127,25 @@ class TarantoolConnection extends Serializable with Closeable with Logging {
       .withServerAddress(binaryDiscoveryConfig.address)
       .build
 
-    new BinaryDiscoveryClusterAddressProvider(getTarantoolClusterDiscoveryConfig(endpoint, discoveryConfig.timeouts))
+    new BinaryDiscoveryClusterAddressProvider(
+      getTarantoolClusterDiscoveryConfig(endpoint, discoveryConfig.timeouts))
   }
 
-  private def getHttpProvider(tarantoolConfig: TarantoolConfig) = {
-    val clusterConfig = tarantoolConfig.clusterConfig.get
-    val discoveryConfig = clusterConfig.discoveryConfig.get
-    val httpDiscoveryConfig: ClusterHttpDiscoveryConfig = discoveryConfig.httpDiscoveryConfig.get
+  private def getHttpProvider(discoveryConfig: ClusterDiscoveryConfig) = {
+    val httpDiscoveryConfig: ClusterHttpDiscoveryConfig =
+      discoveryConfig.httpDiscoveryConfig.get
 
     val endpoint = new HTTPClusterDiscoveryEndpoint.Builder()
       .withURI(httpDiscoveryConfig.url)
       .build
 
-    new HTTPDiscoveryClusterAddressProvider(getTarantoolClusterDiscoveryConfig(endpoint, discoveryConfig.timeouts))
+    new HTTPDiscoveryClusterAddressProvider(
+      getTarantoolClusterDiscoveryConfig(endpoint, discoveryConfig.timeouts))
   }
 
-  private def getTarantoolClusterDiscoveryConfig(endpoint: TarantoolClusterDiscoveryEndpoint,
-                                                 timeouts: ClusterDiscoveryTimeouts): TarantoolClusterDiscoveryConfig = {
+  private def getTarantoolClusterDiscoveryConfig(
+      endpoint: TarantoolClusterDiscoveryEndpoint,
+      timeouts: ClusterDiscoveryTimeouts): TarantoolClusterDiscoveryConfig = {
     val builder = new TarantoolClusterDiscoveryConfig.Builder()
       .withEndpoint(endpoint)
 
