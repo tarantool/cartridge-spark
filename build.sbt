@@ -52,7 +52,7 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % "3.0.1" % "provided",
       "org.apache.spark" %% "spark-sql" % "3.0.1" % "provided",
-      "io.tarantool" % "cartridge-driver" % "0.3.1" % "provided",
+      "io.tarantool" % "cartridge-driver" % "0.3.2" % "provided",
       "org.apache.logging.log4j" % "log4j-api" % "2.2",
       "junit" % "junit" % "4.12" % "test",
       "org.scalatest" %% "scalatest" % "3.1.4" % "test",
