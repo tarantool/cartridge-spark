@@ -12,6 +12,7 @@ build
 out
 target
 project
+.bsp
 
 # Eclipse files
 .classpath
