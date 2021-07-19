@@ -104,3 +104,8 @@ updateSbtClassifiers / useCoursier := true
 
 Test / fork := false
 Test / parallelExecution := false
+
+// Settings for scoverage plug-in
+
+coverageEnabled := true
+coverageHighlighting := true
