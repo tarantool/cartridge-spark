@@ -1,15 +1,15 @@
 package io.tarantool.spark.connector.rdd
 
 import io.tarantool.driver.api.conditions.Conditions
-import io.tarantool.driver.api.{TarantoolClient, TarantoolResult}
 import io.tarantool.driver.api.tuple.TarantoolTuple
+import io.tarantool.driver.api.{TarantoolClient, TarantoolResult}
 import io.tarantool.spark.connector.config.{ReadConfig, TarantoolConfig}
 import io.tarantool.spark.connector.connection.TarantoolConnection
 import io.tarantool.spark.connector.partition.TarantoolPartition
 import io.tarantool.spark.connector.rdd.api.java.TarantoolJavaRDD
 import io.tarantool.spark.connector.util.TarantoolCursorIterator
-import org.apache.spark.{Partition, SparkContext, TaskContext}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 import scala.reflect.ClassTag
 
@@ -49,10 +49,10 @@ class TarantoolRDD[R] private[spark] (
       .map(tupleConverter)
   }
 
+  override def toJavaRDD(): TarantoolJavaRDD[R] = new TarantoolJavaRDD(this)
+
   override protected def getPartitions: Array[Partition] =
     readConfig.partitioner.partitions(globalConfig.hosts, conditions).asInstanceOf[Array[Partition]]
-
-  override def toJavaRDD(): TarantoolJavaRDD[R] = new TarantoolJavaRDD(this)
 }
 
 object TarantoolRDD {

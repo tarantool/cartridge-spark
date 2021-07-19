@@ -9,29 +9,15 @@ import java.util.concurrent.atomic.AtomicReference
 /** Shares a local `SparkContext` between all tests cases */
 trait SharedSparkContext extends BeforeAndAfterAll { self: Suite =>
 
-  private val master = "local"
-  private val appName = "tarantool-spark-test"
-
   val container: TarantoolCartridgeContainer = new TarantoolCartridgeContainer(
     directoryBinding = "cartridge",
     instancesFile = "cartridge/instances.yml",
     topologyConfigurationFile = "cartridge/topology.lua",
     routerPassword = "testapp-cluster-cookie"
   )
-
-  def confWithTarantoolProperties(routerPort: Int): SparkConf = {
-    val _conf = new SparkConf (false)
-      .setMaster (master)
-      .setAppName (appName)
-    _conf.set ("tarantool.username", "admin")
-    _conf.set ("tarantool.password", "testapp-cluster-cookie")
-
-    _conf.set ("tarantool.hosts", "127.0.0.1:" + routerPort)
-
-    _conf
-  }
-
   protected val sc: AtomicReference[SparkContext] = new AtomicReference[SparkContext]()
+  private val master = "local"
+  private val appName = "tarantool-spark-test"
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -39,6 +25,18 @@ trait SharedSparkContext extends BeforeAndAfterAll { self: Suite =>
     if (sc.get() == null) {
       sc.compareAndSet(null, new SparkContext(confWithTarantoolProperties(container.getRouterPort)))
     }
+  }
+
+  def confWithTarantoolProperties(routerPort: Int): SparkConf = {
+    val _conf = new SparkConf(false)
+      .setMaster(master)
+      .setAppName(appName)
+    _conf.set("tarantool.username", "admin")
+    _conf.set("tarantool.password", "testapp-cluster-cookie")
+
+    _conf.set("tarantool.hosts", "127.0.0.1:" + routerPort)
+
+    _conf
   }
 
   override def afterAll(): Unit = {

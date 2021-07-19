@@ -1,9 +1,7 @@
 package io.tarantool.spark.connector.connection
 
 import io.tarantool.driver.TarantoolServerAddress
-import io.tarantool.driver.auth.SimpleTarantoolCredentials
 import io.tarantool.spark.connector.config.{Credentials, ReadConfig, TarantoolConfig, Timeouts}
-import io.tarantool.spark.connector.partition.TarantoolSinglePartitioner
 import org.apache.spark.SparkConf
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

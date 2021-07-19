@@ -23,8 +23,8 @@ scmInfo := Some(
 
 developers := List(
   Developer(
-    id    = "akudiyar",
-    name  = "Alexey Kuzin",
+    id = "akudiyar",
+    name = "Alexey Kuzin",
     email = "akudiyar@gmail.com",
     url = url("https://tarantool.io/")
   )
@@ -34,14 +34,14 @@ scalaVersion := "2.11.12"
 crossScalaVersions := Seq("2.12.13", "2.11.12", "2.10.7")
 
 val commonDependencies = Seq(
-  "io.tarantool"             % "cartridge-driver"                  % "0.5.0",
-  "org.apache.logging.log4j" % "log4j-api"                         % "2.2",
-  "junit"                    % "junit"                             % "4.12"   % "test",
-  "org.testcontainers"       % "testcontainers"                    % "1.15.3" % "test",
-  "io.tarantool"             % "testcontainers-java-tarantool"     % "0.4.4"  % "test",
-  "org.scalatest"            %% "scalatest"                        % "3.2.5"  % "test",
-  "com.dimafeng"             %% "testcontainers-scala-scalatest"   % "0.39.4" % "test",
-  "ch.qos.logback"           % "logback-classic"                   % "1.2.3"  % "test"
+  "io.tarantool"             % "cartridge-driver"                % "0.5.0",
+  "org.apache.logging.log4j" % "log4j-api"                       % "2.2",
+  "junit"                    % "junit"                           % "4.12" % "test",
+  "org.testcontainers"       % "testcontainers"                  % "1.15.3" % "test",
+  "io.tarantool"             % "testcontainers-java-tarantool"   % "0.4.4" % "test",
+  "org.scalatest"            %% "scalatest"                      % "3.2.5" % "test",
+  "com.dimafeng"             %% "testcontainers-scala-scalatest" % "0.39.4" % "test",
+  "ch.qos.logback"           % "logback-classic"                 % "1.2.3" % "test"
 )
 
 libraryDependencies ++= commonDependencies
@@ -50,7 +50,7 @@ libraryDependencies ++= {
     case Some((2, scalaMajor)) if scalaMajor >= 11 =>
       Seq(
         "org.apache.spark" %% "spark-core" % "2.4.8" % "provided",
-        "org.apache.spark" %% "spark-sql"  % "2.4.8" % "provided",
+        "org.apache.spark" %% "spark-sql"  % "2.4.8" % "provided"
       )
     case _ =>
       Seq(
@@ -65,14 +65,14 @@ dependencyOverrides ++= {
     case Some((2, scalaMajor)) if scalaMajor >= 11 =>
       Seq(
         "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.7",
-        "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.7.3",
-        "com.fasterxml.jackson.core" % "jackson-core" % "2.6.7"
+        "com.fasterxml.jackson.core"   % "jackson-databind"      % "2.6.7.3",
+        "com.fasterxml.jackson.core"   % "jackson-core"          % "2.6.7"
       )
     case _ =>
       Seq(
         "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.5",
-        "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5",
-        "com.fasterxml.jackson.core" % "jackson-core" % "2.6.5"
+        "com.fasterxml.jackson.core"   % "jackson-databind"      % "2.6.5",
+        "com.fasterxml.jackson.core"   % "jackson-core"          % "2.6.5"
       )
   }
 }
@@ -91,9 +91,9 @@ resolvers += Resolver.mavenLocal
 publishTo := {
   val nexus = "https://oss.sonatype.org/"
   if (isSnapshot.value)
-    Some("snapshots" at nexus + "content/repositories/snapshots")
+    Some("snapshots".at(nexus + "content/repositories/snapshots"))
   else
-    Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
 }
 
 publishMavenStyle := true

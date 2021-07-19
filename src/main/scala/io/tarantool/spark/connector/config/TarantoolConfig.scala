@@ -41,6 +41,12 @@ object TarantoolConfig {
 
   private val SPARK_CURSOR_BATCH_SIZE = SPARK_PREFIX + CURSOR_BATCH_SIZE
 
+  def parseBatchSize(cfg: SparkConf): Option[Int] =
+    cfg.getOption(CURSOR_BATCH_SIZE).orElse(cfg.getOption(SPARK_CURSOR_BATCH_SIZE)).map(_.toInt)
+
+  def apply(cfg: SparkConf): TarantoolConfig =
+    TarantoolConfig(parseHosts(cfg), parseCredentials(cfg), parseTimeouts(cfg))
+
   def parseCredentials(cfg: SparkConf): Option[Credentials] = {
     val username = cfg.getOption(USERNAME).orElse(cfg.getOption(SPARK_USERNAME))
     val password = cfg.getOption(PASSWORD).orElse(cfg.getOption(SPARK_PASSWORD))
@@ -53,7 +59,9 @@ object TarantoolConfig {
   }
 
   def parseHosts(cfg: SparkConf): Seq[TarantoolServerAddress] = {
-    var hosts = cfg.get(HOSTS, "").split(",")
+    var hosts = cfg
+      .get(HOSTS, "")
+      .split(",")
       .union(cfg.get(SPARK_HOSTS, "").split(","))
       .distinct
       .filter(_.nonEmpty)
@@ -66,23 +74,13 @@ object TarantoolConfig {
     hosts
   }
 
-  def parseTimeouts(cfg: SparkConf): Timeouts = {
+  def parseTimeouts(cfg: SparkConf): Timeouts =
     Timeouts(
       parseTimeout(cfg, CONNECT_TIMEOUT, SPARK_CONNECT_TIMEOUT),
       parseTimeout(cfg, READ_TIMEOUT, SPARK_READ_TIMEOUT),
       parseTimeout(cfg, REQUEST_TIMEOUT, SPARK_REQUEST_TIMEOUT)
     )
-  }
 
-  def parseTimeout(cfg: SparkConf, name: String, nameWithSparkPrefix: String): Option[Int] = {
+  def parseTimeout(cfg: SparkConf, name: String, nameWithSparkPrefix: String): Option[Int] =
     cfg.getOption(name).orElse(cfg.getOption(nameWithSparkPrefix)).map(_.toInt)
-  }
-
-  def parseBatchSize(cfg: SparkConf): Option[Int] = {
-    cfg.getOption(CURSOR_BATCH_SIZE).orElse(cfg.getOption(SPARK_CURSOR_BATCH_SIZE)).map(_.toInt)
-  }
-
-  def apply(cfg: SparkConf): TarantoolConfig = {
-    TarantoolConfig(parseHosts(cfg), parseCredentials(cfg), parseTimeouts(cfg))
-  }
 }

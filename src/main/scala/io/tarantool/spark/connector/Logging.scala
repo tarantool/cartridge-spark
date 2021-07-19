@@ -16,18 +16,6 @@ trait Logging {
   // be serialized and used on another machine
   @transient private var _log: Logger = _
 
-  protected def logName: String = {
-    // Ignore trailing $'s in the class names for Scala objects
-    this.getClass.getName.stripSuffix("$")
-  }
-
-  protected def log: Logger = {
-    if (_log == null) {
-      _log = LoggerFactory.getLogger(logName)
-    }
-    _log
-  }
-
   protected def logInfo(msg: => String) {
     if (log.isInfoEnabled) log.info(msg)
   }
@@ -43,6 +31,17 @@ trait Logging {
   protected def logWarning(msg: => String) {
     if (log.isWarnEnabled) log.warn(msg)
   }
+
+  protected def log: Logger = {
+    if (_log == null) {
+      _log = LoggerFactory.getLogger(logName)
+    }
+    _log
+  }
+
+  protected def logName: String =
+    // Ignore trailing $'s in the class names for Scala objects
+    this.getClass.getName.stripSuffix("$")
 
   protected def logError(msg: => String) {
     if (log.isErrorEnabled) log.error(msg)
@@ -68,7 +67,6 @@ trait Logging {
     if (log.isErrorEnabled) log.error(msg, throwable)
   }
 
-  protected def isTraceEnabled: Boolean = {
+  protected def isTraceEnabled: Boolean =
     log.isTraceEnabled
-  }
 }
