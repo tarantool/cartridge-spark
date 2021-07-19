@@ -13,6 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Cache docker images
+        uses: satackey/action-docker-layer-caching@v0.0.11
+        continue-on-error: true
+        with:
+          key: ${{ runner.os }}-docker-layer-cache-2.8
+          restore-keys: |
+            ${{ runner.os }}-docker-layer-cache-
       - name: Run tests
         env:
           TARANTOOL_SERVER_USER: root
