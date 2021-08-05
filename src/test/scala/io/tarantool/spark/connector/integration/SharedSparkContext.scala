@@ -42,8 +42,9 @@ trait SharedSparkContext extends BeforeAndAfterAll { self: Suite =>
   override def afterAll(): Unit = {
     super.afterAll()
     val scRef = sc.get()
-    scRef.stop()
-    sc.compareAndSet(scRef, null)
+    if (sc.compareAndSet(scRef, null)) {
+      scRef.stop()
+    }
     container.stop()
   }
 }
