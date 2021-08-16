@@ -1,3 +1,6 @@
+[![Build Status](https://github.com/tarantool/cartridge-spark/workflows/ubuntu-master/badge.svg)](https://github.com/tarantool/cartridge-spark/actions)
+[![CodeCov](https://codecov.io/gh/tarantool/cartridge-spark/branch/master/graph/badge.svg)](https://codecov.io/gh/tarantool/cartridge-spark)
+
 # tarantool-spark-connector
 
 Apache Spark connector for Tarantool and Tarantool Cartridge

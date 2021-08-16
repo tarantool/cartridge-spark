@@ -1,0 +1,26 @@
+codecov:
+  notify:
+    require_ci_to_pass: yes
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...90"
+
+  status:
+    project:
+      default:
+        enabled: true
+        target: auto
+        threshold: 0.1%
+    patch:
+      default:
+        enabled: true
+        target: auto
+        threshold: 0.1%
+    changes: off
+
+comment: off
+
+github_checks:
+  annotations: false
