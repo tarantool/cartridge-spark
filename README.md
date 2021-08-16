@@ -36,14 +36,15 @@ libraryDependencies += "io.tarantool" %% "tarantool-spark-connector" % "1.0.0-SN
 
 ### Configuration
 
-| property-key                            | description                                 | default value   |
-| --------------------------------------- | ------------------------------------------- | --------------- |
-| tarantool.hosts                         | comma separated list of Tarantool hosts     | 127.0.0.1:3301  |
-| tarantool.username                      | basic authentication user                   | guest           |
-| tarantool.password                      | basic authentication password               |                 |
-| tarantool.connectTimeout                | server connect timeout, in milliseconds     | 1000            |
-| tarantool.readTimeout                   | socket read timeout, in milliseconds        | 1000            |
-| tarantool.requestTimeout                | request completion timeout, in milliseconds | 2000            |
+| property-key                            | description                                          | default value   |
+| --------------------------------------- | ---------------------------------------------------- | --------------- |
+| tarantool.hosts                         | comma separated list of Tarantool hosts              | 127.0.0.1:3301  |
+| tarantool.username                      | basic authentication user                            | guest           |
+| tarantool.password                      | basic authentication password                        |                 |
+| tarantool.connectTimeout                | server connect timeout, in milliseconds              | 1000            |
+| tarantool.readTimeout                   | socket read timeout, in milliseconds                 | 1000            |
+| tarantool.requestTimeout                | request completion timeout, in milliseconds          | 2000            |
+| tarantool.cursorBatchSize               | default limit for prefetching tuples in RDD iterator | 1000            |
 
 ### Setup SparkContext
 
@@ -92,9 +93,23 @@ Using Scala:
 or Java:
 ```java
     SparkConf conf = new SparkConf()
-    JavaSparkContext sc = new JavaSparkContext(conf);
+    JavaSparkContext jsc = new JavaSparkContext(conf);
 
-    val rdd = TarantoolSpark.load(sc, "test_space")
+    // Use custom tuple conversion
+    SparkContextJavaFunctions sparkContextFunctions = new SparkContextJavaFunctions(jsc.sc());
+    TupleConverterFactory<Book> converterFactory = new FunctionBasedTupleConverterFactory<>(
+    toScalaFunction1(t -> {
+        Book book = new Book();
+        book.id = t.getInteger("id");
+        book.name = t.getString("name");
+        book.author = t.getString("author");
+        book.year = t.getInteger("year");
+        return book;
+        }),
+        getClassTag(Book.class)
+    );
+    List<Book> tuples = sparkContextFunctions
+        .tarantoolSpace("test_space", Conditions.any(), converterFactory).collect();
 ```
 
 ## Learn more

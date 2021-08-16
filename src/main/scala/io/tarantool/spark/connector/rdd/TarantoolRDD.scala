@@ -6,7 +6,7 @@ import io.tarantool.driver.api.{TarantoolClient, TarantoolResult}
 import io.tarantool.spark.connector.config.{ReadConfig, TarantoolConfig}
 import io.tarantool.spark.connector.connection.TarantoolConnection
 import io.tarantool.spark.connector.partition.TarantoolPartition
-import io.tarantool.spark.connector.rdd.api.java.TarantoolJavaRDD
+import io.tarantool.spark.connector.rdd.converter.{FunctionBasedTupleConverter, TupleConverter}
 import io.tarantool.spark.connector.util.TarantoolCursorIterator
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{Partition, SparkContext, TaskContext}
@@ -17,10 +17,10 @@ class TarantoolRDD[R] private[spark] (
   @transient val sc: SparkContext,
   val space: String,
   val conditions: Conditions,
+  val tupleConverter: TupleConverter[R],
   val readConfig: ReadConfig
 )(
-  implicit val ct: ClassTag[R],
-  implicit val tupleConverter: TarantoolTuple => R
+  implicit val ct: ClassTag[R]
 ) extends RDD[R](sc, Seq.empty) {
 
   private val globalConfig = TarantoolConfig(sparkContext.getConf)
@@ -46,10 +46,8 @@ class TarantoolRDD[R] private[spark] (
     val tarantoolSpace = client.space(space)
     // TODO add limit and offset to conditions based on partition information
     TarantoolCursorIterator(tarantoolSpace.cursor(conditions, readConfig.batchSize))
-      .map(tupleConverter)
+      .map(tupleConverter.convert)
   }
-
-  override def toJavaRDD(): TarantoolJavaRDD[R] = new TarantoolJavaRDD(this)
 
   override protected def getPartitions: Array[Partition] =
     readConfig.partitioner.partitions(globalConfig.hosts, conditions).asInstanceOf[Array[Partition]]
@@ -62,11 +60,27 @@ object TarantoolRDD {
     space: String,
     conditions: Conditions,
     readConfig: ReadConfig,
-    converter: TarantoolTuple => R
+    converter: TupleConverter[R]
   )(
     implicit
-    ct: ClassTag[R],
-    tupleConverter: TarantoolTuple => R = converter
+    ct: ClassTag[R]
   ): TarantoolRDD[R] =
-    new TarantoolRDD[R](sc, space, conditions, readConfig)
+    new TarantoolRDD[R](sc, space, conditions, converter, readConfig)
+
+  def apply(
+    sc: SparkContext,
+    space: String,
+    conditions: Conditions,
+    readConfig: ReadConfig
+  )(
+    implicit
+    ct: ClassTag[TarantoolTuple]
+  ): TarantoolRDD[TarantoolTuple] =
+    new TarantoolRDD[TarantoolTuple](
+      sc,
+      space,
+      conditions,
+      FunctionBasedTupleConverter(),
+      readConfig
+    )
 }
