@@ -99,20 +99,15 @@ or Java:
     JavaSparkContext jsc = new JavaSparkContext(conf);
 
     // Use custom tuple conversion
-    SparkContextJavaFunctions sparkContextFunctions = new SparkContextJavaFunctions(jsc.sc());
-    TupleConverterFactory<Book> converterFactory = new FunctionBasedTupleConverterFactory<>(
-    toScalaFunction1(t -> {
-        Book book = new Book();
-        book.id = t.getInteger("id");
-        book.name = t.getString("name");
-        book.author = t.getString("author");
-        book.year = t.getInteger("year");
-        return book;
-        }),
-        getClassTag(Book.class)
-    );
-    List<Book> tuples = sparkContextFunctions
-        .tarantoolSpace("test_space", Conditions.any(), converterFactory).collect();
+    List<Book> tuples = TarantoolSpark.contextFunctions(jsc)
+        .tarantoolSpace("test_space", Conditions.any(), t -> {
+            Book book = new Book();
+            book.id = t.getInteger("id");
+            book.name = t.getString("name");
+            book.author = t.getString("author");
+            book.year = t.getInteger("year");
+            return book;
+        }, Book.class).collect();
 ```
 
 ## Learn more
