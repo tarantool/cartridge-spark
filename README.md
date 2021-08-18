@@ -1,7 +1,7 @@
 [![Build Status](https://github.com/tarantool/cartridge-spark/workflows/ubuntu-master/badge.svg)](https://github.com/tarantool/cartridge-spark/actions)
 [![CodeCov](https://codecov.io/gh/tarantool/cartridge-spark/branch/master/graph/badge.svg)](https://codecov.io/gh/tarantool/cartridge-spark)
 
-# tarantool-spark-connector
+# spark-tarantool-connector
 
 Apache Spark connector for Tarantool and Tarantool Cartridge
 
@@ -16,7 +16,7 @@ You can link against this library for Maven in your program at the following coo
 ```xml
 <dependency>
   <groupId>io.tarantool</groupId>
-  <artifactId>tarantool-spark-connector</artifactId>
+  <artifactId>spark-tarantool-connector</artifactId>
   <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
@@ -24,16 +24,15 @@ You can link against this library for Maven in your program at the following coo
 or for `sbt`:
 
 ```
-libraryDependencies += "io.tarantool" %% "tarantool-spark-connector" % "1.0.0-SNAPSHOT"
+libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "1.0.0-SNAPSHOT"
 ```
 
 ## Version Compatibility
 
 | Connector | Scala   | Apache Spark | Tarantool Server |
 | --------- | ------- | ------------ | ---------------- |
-| 1.x.x     | 2.10.7  | 2.2.1        | 1.10.9+,  2.4+   |
-| 1.x.x     | 2.11.12 | 2.4.8        | 1.10.9+,  2.4+   |
-| 1.x.x     | 2.12.13 | 2.4.8        | 1.10.9+,  2.4+   |
+| 1.x.x     | 2.11.12 | 2.2, 2.4     | 1.10.9+,  2.4+   |
+| 1.x.x     | 2.12.14 | 2.2, 2.4     | 1.10.9+,  2.4+   |
 
 ## Getting Started
 
