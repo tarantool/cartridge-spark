@@ -11,6 +11,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scala:
+          - 2.11.12
+          - 2.12.14
+        tarantool:
+          - 2.8
     steps:
       - uses: actions/checkout@v2
       - name: Setup Scala
@@ -21,24 +28,46 @@ jobs:
         uses: satackey/action-docker-layer-caching@v0.0.11
         continue-on-error: true
         with:
-          key: ${{ runner.os }}-docker-layer-cache-2.8
+          key: ${{ runner.os }}-docker-layer-cache-${{ matrix.tarantool }}
           restore-keys: |
             ${{ runner.os }}-docker-layer-cache-
+      - name: Cache SBT
+        uses: actions/cache@v2.1.4
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ matrix.scala }}-${{ hashFiles('**/build.sbt') }}
       - name: Run tests
         env:
+          TARANTOOL_VERSION: ${{ matrix.tarantool }}
           TARANTOOL_SERVER_USER: root
           TARANTOOL_SERVER_GROUP: root
-        run: sbt coverage test
-      - name: Coverage Report
-        run: sbt coverageReport
+        run: sbt ++${{ matrix.scala }} coverage test coverageReport
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   lint:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scala:
+          - 2.11.12
+          - 2.12.14
     steps:
       - uses: actions/checkout@v2
-      - name: Formatting
-        run: sbt scalafmtSbtCheck scalafmtCheck test:scalafmtCheck
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v11
+        with:
+          java-version: "adopt@1.8"
+      - name: Cache SBT
+        uses: actions/cache@v2.1.4
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ matrix.scala }}-${{ hashFiles('**/build.sbt') }}
+      - name: Check formatting
+        run: sbt ++${{ matrix.scala }} scalafmtSbtCheck scalafmtCheck test:scalafmtCheck
