@@ -1,4 +1,7 @@
-# tarantool-spark-connector
+[![Build Status](https://github.com/tarantool/cartridge-spark/workflows/ubuntu-master/badge.svg)](https://github.com/tarantool/cartridge-spark/actions)
+[![CodeCov](https://codecov.io/gh/tarantool/cartridge-spark/branch/master/graph/badge.svg)](https://codecov.io/gh/tarantool/cartridge-spark)
+
+# spark-tarantool-connector
 
 Apache Spark connector for Tarantool and Tarantool Cartridge
 
@@ -13,7 +16,7 @@ You can link against this library for Maven in your program at the following coo
 ```xml
 <dependency>
   <groupId>io.tarantool</groupId>
-  <artifactId>tarantool-spark-connector</artifactId>
+  <artifactId>spark-tarantool-connector</artifactId>
   <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
@@ -21,29 +24,29 @@ You can link against this library for Maven in your program at the following coo
 or for `sbt`:
 
 ```
-libraryDependencies += "io.tarantool" %% "tarantool-spark-connector" % "1.0.0-SNAPSHOT"
+libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "1.0.0-SNAPSHOT"
 ```
 
 ## Version Compatibility
 
 | Connector | Scala   | Apache Spark | Tarantool Server |
 | --------- | ------- | ------------ | ---------------- |
-| 1.x.x     | 2.10.7  | 2.2.1        | 1.10.9+,  2.4+   |
-| 1.x.x     | 2.11.12 | 2.4.8        | 1.10.9+,  2.4+   |
-| 1.x.x     | 2.12.13 | 2.4.8        | 1.10.9+,  2.4+   |
+| 1.x.x     | 2.11.12 | 2.2, 2.4     | 1.10.9+,  2.4+   |
+| 1.x.x     | 2.12.14 | 2.2, 2.4     | 1.10.9+,  2.4+   |
 
 ## Getting Started
 
 ### Configuration
 
-| property-key                            | description                                 | default value   |
-| --------------------------------------- | ------------------------------------------- | --------------- |
-| tarantool.hosts                         | comma separated list of Tarantool hosts     | 127.0.0.1:3301  |
-| tarantool.username                      | basic authentication user                   | guest           |
-| tarantool.password                      | basic authentication password               |                 |
-| tarantool.connectTimeout                | server connect timeout, in milliseconds     | 1000            |
-| tarantool.readTimeout                   | socket read timeout, in milliseconds        | 1000            |
-| tarantool.requestTimeout                | request completion timeout, in milliseconds | 2000            |
+| property-key                            | description                                          | default value   |
+| --------------------------------------- | ---------------------------------------------------- | --------------- |
+| tarantool.hosts                         | comma separated list of Tarantool hosts              | 127.0.0.1:3301  |
+| tarantool.username                      | basic authentication user                            | guest           |
+| tarantool.password                      | basic authentication password                        |                 |
+| tarantool.connectTimeout                | server connect timeout, in milliseconds              | 1000            |
+| tarantool.readTimeout                   | socket read timeout, in milliseconds                 | 1000            |
+| tarantool.requestTimeout                | request completion timeout, in milliseconds          | 2000            |
+| tarantool.cursorBatchSize               | default limit for prefetching tuples in RDD iterator | 1000            |
 
 ### Setup SparkContext
 
@@ -92,9 +95,18 @@ Using Scala:
 or Java:
 ```java
     SparkConf conf = new SparkConf()
-    JavaSparkContext sc = new JavaSparkContext(conf);
+    JavaSparkContext jsc = new JavaSparkContext(conf);
 
-    val rdd = TarantoolSpark.load(sc, "test_space")
+    // Use custom tuple conversion
+    List<Book> tuples = TarantoolSpark.contextFunctions(jsc)
+        .tarantoolSpace("test_space", Conditions.any(), t -> {
+            Book book = new Book();
+            book.id = t.getInteger("id");
+            book.name = t.getString("name");
+            book.author = t.getString("author");
+            book.year = t.getInteger("year");
+            return book;
+        }, Book.class).collect();
 ```
 
 ## Learn more

@@ -1,8 +1,9 @@
 package io.tarantool.spark.connector
 
 import io.tarantool.driver.api.conditions.Conditions
-import io.tarantool.driver.api.tuple.TarantoolTuple
 import io.tarantool.spark.connector.config.ReadConfig
+import io.tarantool.spark.connector.rdd.TarantoolRDD
+import io.tarantool.spark.connector.rdd.converter.TupleConverterFactory
 import org.apache.spark.SparkContext
 
 import scala.reflect.ClassTag
@@ -17,16 +18,23 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Serializabl
   /**
     * Load data from Tarantool space as `TarantoolRDD`, filtering it with conditions.
     *
-    * This method is made available on [[org.apache.spark.SparkContext SparkContext]] by importing
-    * io.tarantool.spark._
+    * <p>This method is made available on [[org.apache.spark.SparkContext SparkContext]] by importing
+    * io.tarantool.spark._</p>
     *
-    * Example:
-    * {{{
-    *   //TODO: populate Tarantool space
-    * }}}
-    * {{{
-    *   //TODO: load from space
-    * }}}
+    * <p>Example:
+    * <pre>
+    * local crud = require('crud')
+    *
+    * crud.insert('test_space', {1, nil, 'a1', 'Don Quixote', 'Miguel de Cervantes', 1605})
+    * crud.insert('test_space', {2, nil, 'a2', 'The Great Gatsby', 'F. Scott Fitzgerald', 1925})
+    * crud.insert('test_space', {3, nil, 'a3', 'War and Peace', 'Leo Tolstoy', 1869})
+    * ...
+    *
+    * val rdd = sc.tarantoolSpace("test_space", Conditions.indexGreaterThan("id", Collections.singletonList(1)));
+    * rdd.first().getInteger("id"); // 1
+    * rdd.first().getString("author"); // "Miguel de Cervantes"
+    * </pre>
+    * </p>
     *
     * @param space        space name
     * @param conditions   filtering conditions
@@ -34,13 +42,19 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Serializabl
     */
   def tarantoolSpace[R](
     space: String,
-    conditions: Conditions = Conditions.any(),
-    tupleConverter: TarantoolTuple => R = (value: TarantoolTuple) => value.asInstanceOf[R]
+    conditions: Conditions
   )(
     implicit
-    ctr: ClassTag[R],
+    ct: ClassTag[R],
     sparkContext: SparkContext = sc,
-    readConfig: ReadConfig = ReadConfig()
-  ) = rdd.TarantoolRDD(sparkContext, space, conditions, readConfig, tupleConverter)
-
+    readConfig: ReadConfig = ReadConfig(),
+    tupleConverterFactory: TupleConverterFactory[R]
+  ): TarantoolRDD[R] =
+    TarantoolRDD(
+      sparkContext,
+      space,
+      conditions,
+      readConfig,
+      tupleConverterFactory.tupleConverter()
+    )
 }

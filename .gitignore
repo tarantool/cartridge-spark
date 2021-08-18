@@ -37,3 +37,6 @@ codereview.rc
 # local settings
 **/gradle.properties
 .java-version
+
+# Local SBT options
+.sbtopts

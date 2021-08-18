@@ -7,6 +7,7 @@ import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory
 import io.tarantool.spark.connector._
 import io.tarantool.spark.connector.config.TarantoolConfig
 import io.tarantool.spark.connector.connection.TarantoolConnection
+import io.tarantool.spark.connector.rdd.converter.FunctionBasedTupleConverterFactory
 import org.scalatest._
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -49,7 +50,8 @@ class TarantoolSparkReadClusterClientTest
   }
 
   test("Load the whole space") {
-    val rdd: Array[TarantoolTuple] = sc.get().tarantoolSpace("test_space").collect()
+    val rdd: Array[TarantoolTuple] =
+      sc.get().tarantoolSpace("test_space", Conditions.any()).collect()
     rdd.length > 0 should equal(true)
   }
 
@@ -65,5 +67,21 @@ class TarantoolSparkReadClusterClientTest
     rdd.length should equal(2)
     rdd.apply(0).getInteger("id") should equal(2)
     rdd.apply(1).getInteger("id") should equal(3)
+  }
+
+  test("Load the whole space with tuple converter") {
+    implicit val tupleConverterFactory: FunctionBasedTupleConverterFactory[Book] =
+      FunctionBasedTupleConverterFactory { t =>
+        val book = new Book()
+        book.id = t.getInteger("id")
+        book.name = t.getString("name")
+        book.author = t.getString("author")
+        book.year = t.getInteger("year")
+        book
+      }
+    val rdd: Array[Book] =
+      sc.get().tarantoolSpace[Book]("test_space", Conditions.any()).collect()
+    rdd.length > 0 should equal(true)
+    rdd.find(b => b.year == 1605) should not be None
   }
 }

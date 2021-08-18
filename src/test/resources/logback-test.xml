@@ -5,13 +5,13 @@
         </encoder>
     </appender>
 
-    <logger name="com.github.dockerjava" level="DEBUG"/>
+    <logger name="com.github.dockerjava" level="${logLevel:-DEBUG}"/>
     <logger name="com.github.dockerjava.jaxrs" level="INFO"/>
     <logger name="com.github.dockerjava.netty" level="INFO"/>
     <logger name="com.github.dockerjava.httpclient5" level="INFO"/>
     <logger name="com.github.dockerjava.okhttp" level="INFO"/>
 
-    <root level="${logLevel:-info}">
+    <root level="${logLevel:-INFO}">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

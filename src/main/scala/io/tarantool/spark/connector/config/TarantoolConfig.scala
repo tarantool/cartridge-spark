@@ -27,8 +27,6 @@ object TarantoolConfig {
 
   private val HOSTS = PREFIX + "hosts"
 
-  private val CURSOR_BATCH_SIZE = PREFIX + "cursorBatchSize"
-
   //options with spark. prefix
   private val SPARK_USERNAME = SPARK_PREFIX + USERNAME
   private val SPARK_PASSWORD = SPARK_PREFIX + PASSWORD
@@ -38,11 +36,6 @@ object TarantoolConfig {
   private val SPARK_REQUEST_TIMEOUT = SPARK_PREFIX + REQUEST_TIMEOUT
 
   private val SPARK_HOSTS = SPARK_PREFIX + HOSTS
-
-  private val SPARK_CURSOR_BATCH_SIZE = SPARK_PREFIX + CURSOR_BATCH_SIZE
-
-  def parseBatchSize(cfg: SparkConf): Option[Int] =
-    cfg.getOption(CURSOR_BATCH_SIZE).orElse(cfg.getOption(SPARK_CURSOR_BATCH_SIZE)).map(_.toInt)
 
   def apply(cfg: SparkConf): TarantoolConfig =
     TarantoolConfig(parseHosts(cfg), parseCredentials(cfg), parseTimeouts(cfg))
