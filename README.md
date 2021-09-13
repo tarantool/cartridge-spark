@@ -80,7 +80,7 @@ Using Scala:
   val sc = new SparkContext(conf)
 
   // Load the whole space
-  val rdd: Array[TarantoolTuple] = sc.get().tarantoolSpace("test_space").collect()
+  val rdd: Array[TarantoolTuple] = sc.tarantoolSpace("test_space").collect()
 
   // Filter using conditions
   val mapper = DefaultMessagePackMapperFactory.getInstance().defaultComplexTypesMapper();
@@ -89,7 +89,7 @@ Using Scala:
     .indexGreaterThan("id", List(1).asJava)
     .withLimit(2)
     .startAfter(startTuple)
-  val rdd: Array[TarantoolTuple] = sc.get().tarantoolSpace("test_space", cond).collect()
+  val tuples: Array[TarantoolTuple] = sc.tarantoolSpace("test_space", cond).collect()
 ```
 
 or Java:
