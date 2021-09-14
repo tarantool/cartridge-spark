@@ -38,7 +38,7 @@ object TarantoolSchema {
     asStructType(spaceMetadata)
   }
 
-  def asStructType(metadata: TarantoolSpaceMetadata): StructType =
+  private def asStructType(metadata: TarantoolSpaceMetadata): StructType =
     DataTypes.createStructType(
       metadata.getSpaceFormatMetadata.asScala.toSeq
         .map(e =>

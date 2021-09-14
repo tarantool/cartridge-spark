@@ -1,7 +1,9 @@
 package io.tarantool.spark.sql
 
 import io.tarantool.driver.api.conditions.Conditions
+import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory
 import io.tarantool.spark.connector.toSparkContextFunctions
+import io.tarantool.spark.sql.MapFunctions.tupleToRow
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources.{BaseRelation, TableScan}
 import org.apache.spark.sql.types.StructType
@@ -23,7 +25,13 @@ private[spark] case class TarantoolRelation(
     userSpecifiedSchema.getOrElse(TarantoolSchema(sqlContext.sparkContext, parameters))
 
   override def buildScan(): RDD[Row] = {
-    val rdd = sqlContext.sparkContext.tarantoolSpace("test_space", Conditions.any())
-    rdd.map(row => tupleToRow(row))
+    val spaceName = parameters.get("space") match {
+      case None       => throw new IllegalArgumentException("space is not specified in parameters")
+      case Some(name) => name
+    }
+
+    val rdd = sqlContext.sparkContext.tarantoolSpace(spaceName, Conditions.any())
+    val defaultMapper = DefaultMessagePackMapperFactory.getInstance().defaultComplexTypesMapper()
+    rdd.map(tuple => tupleToRow(tuple, defaultMapper, schema))
   }
 }
