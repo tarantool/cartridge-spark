@@ -57,11 +57,21 @@ private[spark] object MapFunctions {
 
   def dataTypeToJavaClass(dataType: DataType): Class[_] =
     dataType match {
-      case StringType               => classOf[java.lang.String]
-      case LongType                 => classOf[java.lang.Long]
-      case BooleanType              => classOf[java.lang.Boolean]
-      case decimalType: DecimalType => classOf[java.math.BigDecimal]
-      case mapType: MapType         => classOf[java.util.Map[String, String]]
-      case arrayType: ArrayType     => classOf[java.util.List[String]]
+      case StringType     => classOf[java.lang.String]
+      case LongType       => classOf[java.lang.Long]
+      case IntegerType    => classOf[java.lang.Integer]
+      case ShortType      => classOf[java.lang.Integer]
+      case ByteType       => classOf[java.lang.Integer]
+      case BooleanType    => classOf[java.lang.Boolean]
+      case DoubleType     => classOf[java.lang.Double]
+      case FloatType      => classOf[java.lang.Float]
+      case _: DecimalType => classOf[java.math.BigDecimal]
+      case mapType: MapType =>
+        val keyClass = dataTypeToJavaClass(mapType.keyType)
+        val valueClass = dataTypeToJavaClass(mapType.valueType)
+        classOf[java.util.Map[keyClass.type, valueClass.type]]
+      case arrayType: ArrayType =>
+        val valueClass = dataTypeToJavaClass(arrayType.elementType)
+        classOf[java.util.List[valueClass.type]]
     }
 }
