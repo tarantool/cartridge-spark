@@ -17,9 +17,9 @@ object TestSpaceMetadata {
     "age" -> new TarantoolFieldMetadata("age", "integer", 4),
     "salary" -> new TarantoolFieldMetadata("salary", "decimal", 5),
     "discount" -> new TarantoolFieldMetadata("discount", "number", 6),
-    "favourite_constant" -> new TarantoolFieldMetadata("favourite_constant", "number", 7),
+    "favourite_constant" -> new TarantoolFieldMetadata("favourite_constant", "double", 7),
     "married" -> new TarantoolFieldMetadata("married", "boolean", 8),
-    "updated" -> new TarantoolFieldMetadata("updated", "integer", 9)
+    "updated" -> new TarantoolFieldMetadata("updated", "unsigned", 9)
   )
 
   def apply(): TarantoolSpaceMetadata = {

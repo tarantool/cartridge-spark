@@ -38,13 +38,13 @@ object TarantoolSchema {
     asStructType(spaceMetadata)
   }
 
-  private def asStructType(metadata: TarantoolSpaceMetadata): StructType =
+  def asStructType(metadata: TarantoolSpaceMetadata): StructType =
     DataTypes.createStructType(
       metadata.getSpaceFormatMetadata.asScala.toSeq
         .map(e =>
           DataTypes.createStructField(
             e._2.getFieldName,
-            TarantoolFieldTypes.withName(e._2.getFieldType).dataType,
+            TarantoolFieldTypes.withNameLowerCase(e._2.getFieldType).dataType,
             true
           )
         )
@@ -79,6 +79,11 @@ object TarantoolFieldTypes extends Enumeration {
     "map",
     DataTypes.createMapType(DataTypes.StringType, DataTypes.StringType, true)
   )
+
+  def withNameLowerCase(name: String): Value =
+    values
+      .find(_.toString.toLowerCase() == name.toLowerCase())
+      .getOrElse(throw new NoSuchElementException(s"No value found for '$name'"))
 
   implicit def convert(value: Value): TarantoolFieldType = value.asInstanceOf[TarantoolFieldType]
 }
