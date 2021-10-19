@@ -36,7 +36,7 @@ libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "1.0.0-SN
 
 ## Getting Started
 
-### Configuration
+### Configuration properties
 
 | property-key                            | description                                          | default value   |
 | --------------------------------------- | ---------------------------------------------------- | --------------- |
@@ -48,56 +48,54 @@ libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "1.0.0-SN
 | tarantool.requestTimeout                | request completion timeout, in milliseconds          | 2000            |
 | tarantool.cursorBatchSize               | default limit for prefetching tuples in RDD iterator | 1000            |
 
-### Setup SparkContext
-
-Using Scala:
-```scala
-
-// Using a default client (proxy client for Tarantool Cartridge + tarantool/crud)
-val conf = new SparkConf()
-    .set("tarantool.hosts", "127.0.0.1:3301")
-    .set("tarantool.user", "admin")
-    .set("tarantool.password", "password")
-
-val sc = new SparkContext(conf)
-```
-
-or Java:
-```java
-SparkConf conf = new SparkConf()
-    .set("tarantool.hosts", "127.0.0.1:3301")
-    .set("tarantool.user", "admin")
-    .set("tarantool.password", "password");
-
-JavaSparkContext sc = new JavaSparkContext(conf);
-```
-
 #### Example
 
 Using Scala:
 ```scala
-  val conf = new SparkConf()
-  val sc = new SparkContext(conf)
+    // 1. Set up the Spark session
+    val spark = SparkSession.builder()
+       .config("tarantool.hosts", "127.0.0.1:3301")
+       .config("tarantool.user", "admin")
+       .config("tarantool.password", "password")
+       .getOrCreate()
+    
+    val sc = spark.sparkContext
+    
+    // 2. Load the whole space
+    val rdd: Array[TarantoolTuple] = sc.tarantoolSpace("test_space").collect()
 
-  // Load the whole space
-  val rdd: Array[TarantoolTuple] = sc.tarantoolSpace("test_space").collect()
+    // 3. Filter using conditions
+    // This mapper will be used implicitly for tuple conversion
+    val mapper = DefaultMessagePackMapperFactory.getInstance().defaultComplexTypesMapper()
+    
+    val startTuple = new DefaultTarantoolTupleFactory(mapper).create(List(1).asJava)
+    val cond: Conditions = Conditions
+        .indexGreaterThan("id", List(1).asJava)
+        .withLimit(2)
+        .startAfter(startTuple)
+    val tuples: Array[TarantoolTuple] = sc.tarantoolSpace("test_space", cond).collect()
 
-  // Filter using conditions
-  val mapper = DefaultMessagePackMapperFactory.getInstance().defaultComplexTypesMapper();
-  val startTuple = new DefaultTarantoolTupleFactory(mapper).create(List(1).asJava)
-  val cond: Conditions = Conditions
-    .indexGreaterThan("id", List(1).asJava)
-    .withLimit(2)
-    .startAfter(startTuple)
-  val tuples: Array[TarantoolTuple] = sc.tarantoolSpace("test_space", cond).collect()
+    // 4. Load the whole space into a DataFrame
+    val df = spark.read
+      .format("org.apache.spark.sql.tarantool")
+      .option("space", "test_space")
+      .load()
+    
+    // Space schema from Tarantool will be used for mapping the tuple fields
+    val tupleIDs: Array[Int] = df.select("id").rdd.map(row => row.get(0)).collect()
 ```
 
 or Java:
 ```java
+    // 1. Set up the Spark context
     SparkConf conf = new SparkConf()
+        .set("tarantool.hosts", "127.0.0.1:3301")
+        .set("tarantool.user", "admin")
+        .set("tarantool.password", "password");
+
     JavaSparkContext jsc = new JavaSparkContext(conf);
 
-    // Use custom tuple conversion
+    // 2. Load all tuples from a space using custom tuple to POJO conversion
     List<Book> tuples = TarantoolSpark.contextFunctions(jsc)
         .tarantoolSpace("test_space", Conditions.any(), t -> {
             Book book = new Book();
