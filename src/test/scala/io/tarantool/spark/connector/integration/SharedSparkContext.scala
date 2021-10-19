@@ -1,6 +1,7 @@
 package io.tarantool.spark.connector.integration
 
 import io.tarantool.spark.connector.containers.TarantoolCartridgeContainer
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
@@ -15,16 +16,30 @@ trait SharedSparkContext extends BeforeAndAfterAll { self: Suite =>
     topologyConfigurationFile = "cartridge/topology.lua",
     routerPassword = "testapp-cluster-cookie"
   )
-  protected val sc: AtomicReference[SparkContext] = new AtomicReference[SparkContext]()
+  private val sparkSession: AtomicReference[SparkSession] = new AtomicReference[SparkSession]()
   private val master = "local"
   private val appName = "tarantool-spark-test"
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     container.start()
-    if (sc.get() == null) {
-      sc.compareAndSet(null, new SparkContext(confWithTarantoolProperties(container.getRouterPort)))
+    if (sparkSession.get() == null) {
+      sparkSession.compareAndSet(
+        null,
+        configureSparkSession(
+          SparkSession.builder(),
+          confWithTarantoolProperties(container.getRouterPort)
+        ).getOrCreate()
+      )
     }
+  }
+
+  def configureSparkSession(
+    sessionBuilder: SparkSession.Builder,
+    conf: SparkConf
+  ): SparkSession.Builder = {
+    sessionBuilder.config(conf)
+    sessionBuilder
   }
 
   def confWithTarantoolProperties(routerPort: Int): SparkConf = {
@@ -39,10 +54,16 @@ trait SharedSparkContext extends BeforeAndAfterAll { self: Suite =>
     _conf
   }
 
+  def sc: SparkContext =
+    sparkSession.get().sparkContext
+
+  def spark: SparkSession =
+    sparkSession.get()
+
   override def afterAll(): Unit = {
     super.afterAll()
-    val scRef = sc.get()
-    if (sc.compareAndSet(scRef, null)) {
+    val scRef = sparkSession.get()
+    if (sparkSession.compareAndSet(scRef, null)) {
       scRef.stop()
     }
     container.stop()

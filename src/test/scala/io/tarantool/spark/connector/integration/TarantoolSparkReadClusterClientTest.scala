@@ -4,10 +4,10 @@ import io.tarantool.driver.DefaultTarantoolTupleFactory
 import io.tarantool.driver.api.conditions.Conditions
 import io.tarantool.driver.api.tuple.TarantoolTuple
 import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory
-import io.tarantool.spark.connector._
 import io.tarantool.spark.connector.config.TarantoolConfig
 import io.tarantool.spark.connector.connection.TarantoolConnection
 import io.tarantool.spark.connector.rdd.converter.FunctionBasedTupleConverterFactory
+import io.tarantool.spark.connector.toSparkContextFunctions
 import org.scalatest._
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -41,7 +41,7 @@ class TarantoolSparkReadClusterClientTest
   test("Create connection") {
     val tarantoolConnection = TarantoolConnection()
     val tarantoolClient = Option(
-      tarantoolConnection.client(TarantoolConfig(sc.get().getConf))
+      tarantoolConnection.client(TarantoolConfig(sc.getConf))
     )
     tarantoolClient should not be Option.empty
     val spaceHolder = tarantoolClient.get.metadata.getSpaceByName(SPACE_NAME)
@@ -51,8 +51,18 @@ class TarantoolSparkReadClusterClientTest
 
   test("Load the whole space") {
     val rdd: Array[TarantoolTuple] =
-      sc.get().tarantoolSpace("test_space", Conditions.any()).collect()
+      sc.tarantoolSpace("test_space", Conditions.any()).collect()
     rdd.length > 0 should equal(true)
+  }
+
+  test("Load the whole space into a DataFrame") {
+    val df = spark.read
+      .format("org.apache.spark.sql.tarantool")
+      .option("space", "test_space")
+      .load()
+
+    df.count() > 0 should equal(true)
+    df.select("id").rdd.map(row => row.get(0)).collect() should equal(Array(1, 2, 3))
   }
 
   test("Load the whole space with conditions") {
@@ -62,7 +72,7 @@ class TarantoolSparkReadClusterClientTest
       .indexGreaterThan("id", List(1).asJava)
       .withLimit(2)
       .startAfter(startTuple)
-    val rdd: Array[TarantoolTuple] = sc.get().tarantoolSpace("test_space", cond).collect()
+    val rdd: Array[TarantoolTuple] = sc.tarantoolSpace("test_space", cond).collect()
 
     rdd.length should equal(2)
     rdd.apply(0).getInteger("id") should equal(2)
@@ -80,7 +90,7 @@ class TarantoolSparkReadClusterClientTest
         book
       }
     val rdd: Array[Book] =
-      sc.get().tarantoolSpace[Book]("test_space", Conditions.any()).collect()
+      sc.tarantoolSpace[Book]("test_space", Conditions.any()).collect()
     rdd.length > 0 should equal(true)
     rdd.find(b => b.year == 1605) should not be None
   }

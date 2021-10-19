@@ -1,4 +1,4 @@
-package io.tarantool.spark.sql
+package org.apache.spark.sql.tarantool
 
 import io.tarantool.driver.DefaultTarantoolTupleFactory
 import io.tarantool.driver.api.tuple.TarantoolTupleImpl

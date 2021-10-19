@@ -1,6 +1,6 @@
-package io.tarantool.spark.sql
+package org.apache.spark.sql.tarantool
 
-import io.tarantool.driver.metadata.TestSpaceMetadata
+import io.tarantool.driver.metadata.TestTarantoolMetadata
 import org.apache.spark.sql.types._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.must.Matchers.contain
@@ -16,7 +16,7 @@ class TarantoolSchemaSpec extends AnyFlatSpec {
   behavior.of("TarantoolSchemaSpec")
 
   it should "generate valid struct type from a simple schema" in {
-    val spaceMetadata = TestSpaceMetadata()
+    val schema = TarantoolSchema(TestTarantoolMetadata())
     val expected = DataTypes.createStructType(
       Seq(
         DataTypes.createStructField("firstname", StringType, true),
@@ -31,7 +31,7 @@ class TarantoolSchemaSpec extends AnyFlatSpec {
         DataTypes.createStructField("updated", LongType, true)
       ).toArray
     )
-    val actual = TarantoolSchema.asStructType(spaceMetadata)
+    val actual = schema.asStructType("testSpace")
 
     actual should contain theSameElementsAs expected
   }

@@ -1,12 +1,13 @@
-package io.tarantool.spark.sql
+package org.apache.spark.sql.tarantool
 
-import io.tarantool.driver.metadata.TarantoolSpaceMetadata
+import io.tarantool.driver.exceptions.TarantoolSpaceNotFoundException
+import io.tarantool.driver.metadata.TarantoolMetadataOperations
 import io.tarantool.spark.connector.config.TarantoolConfig
 import io.tarantool.spark.connector.connection.TarantoolConnection
-import org.apache.spark.SparkContext
+import io.tarantool.spark.connector.util.ScalaToJavaHelper.toJavaSupplier
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.{DataType, DataTypes, StructType}
 
-import java.util.function.Supplier
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.language.implicitConversions
 
@@ -15,32 +16,16 @@ import scala.language.implicitConversions
   *
   * @author Alexey Kuzin
   */
-object TarantoolSchema {
+case class TarantoolSchema(tarantoolMetadata: TarantoolMetadataOperations) {
 
-  def apply(sc: SparkContext, parameters: Map[String, String]): StructType = {
-    val config = TarantoolConfig(sc.getConf)
-    val conn = TarantoolConnection()
-    val client = conn.client(config)
-
-    val spaceName = parameters.get("space") match {
-      case None       => throw new IllegalArgumentException("space is not specified in parameters")
-      case Some(name) => name
-    }
-
-    val spaceMetadata = client
-      .metadata()
-      .getSpaceByName(spaceName)
-      .orElseThrow(new Supplier[Throwable] {
-        override def get(): Throwable =
-          new RuntimeException(s"No metadata found for space $spaceName")
-      })
-
-    asStructType(spaceMetadata)
-  }
-
-  def asStructType(metadata: TarantoolSpaceMetadata): StructType =
-    DataTypes.createStructType(
-      metadata.getSpaceFormatMetadata.asScala.toSeq
+  def asStructType(spaceName: String): StructType = {
+    val structType = DataTypes.createStructType(
+      tarantoolMetadata
+        .getSpaceByName(spaceName)
+        .orElseThrow(toJavaSupplier(() => new TarantoolSpaceNotFoundException(spaceName)))
+        .getSpaceFormatMetadata
+        .asScala
+        .toSeq
         .map(e =>
           DataTypes.createStructField(
             e._2.getFieldName,
@@ -50,6 +35,24 @@ object TarantoolSchema {
         )
         .toArray
     )
+    structType
+  }
+}
+
+/**
+  * Companion object for {@link TarantoolSchema}
+  *
+  * @author Alexey Kuzin
+  */
+object TarantoolSchema {
+
+  def apply(sparkSession: SparkSession): TarantoolSchema = {
+    val config = TarantoolConfig(sparkSession.sparkContext.getConf)
+    val conn = TarantoolConnection()
+    val client = conn.client(config)
+
+    TarantoolSchema(client.metadata())
+  }
 }
 
 object TarantoolFieldTypes extends Enumeration {

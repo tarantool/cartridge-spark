@@ -1,5 +1,8 @@
 package io.tarantool.driver.metadata
 
+import java.util
+import java.util.Optional
+import java.util.concurrent.CompletableFuture
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 /**
@@ -7,6 +10,46 @@ import scala.collection.JavaConverters.mapAsJavaMapConverter
   *
   * @author Alexey Kuzin
   */
+object TestTarantoolMetadata {
+
+  def apply(): TarantoolMetadataOperations = new TarantoolMetadataOperations {
+    override def scheduleRefresh(): Unit = {}
+
+    override def refresh(): CompletableFuture[Void] = CompletableFuture.completedFuture(null)
+
+    override def getSpaceByName(spaceName: String): Optional[TarantoolSpaceMetadata] =
+      Optional.ofNullable(spaceName match {
+        case "testSpace"          => TestSpaceMetadata()
+        case "testSpaceWithArray" => TestSpaceWithArrayMetadata()
+        case "testSpaceWithMap"   => TestSpaceWithMapMetadata()
+        case _                    => null
+      })
+
+    override def getIndexByName(spaceId: Int, indexName: String): Optional[TarantoolIndexMetadata] =
+      Optional.empty()
+
+    override def getIndexByName(
+      spaceName: String,
+      indexName: String
+    ): Optional[TarantoolIndexMetadata] = Optional.empty()
+
+    override def getIndexById(spaceName: String, indexId: Int): Optional[TarantoolIndexMetadata] =
+      Optional.empty()
+
+    override def getIndexById(spaceId: Int, indexId: Int): Optional[TarantoolIndexMetadata] =
+      Optional.empty()
+
+    override def getSpaceById(spaceId: Int): Optional[TarantoolSpaceMetadata] = Optional.empty()
+
+    override def getSpaceIndexes(spaceId: Int): Optional[util.Map[String, TarantoolIndexMetadata]] =
+      Optional.empty()
+
+    override def getSpaceIndexes(
+      spaceName: String
+    ): Optional[util.Map[String, TarantoolIndexMetadata]] = Optional.empty()
+  }
+}
+
 object TestSpaceMetadata {
 
   private val spaceFieldMetadata = Map(

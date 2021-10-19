@@ -1,4 +1,4 @@
-package io.tarantool.spark.sql
+package org.apache.spark.sql.tarantool
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources.{
@@ -21,12 +21,12 @@ class DefaultSource extends DataSourceRegister with RelationProvider with Schema
     sqlContext: SQLContext,
     parameters: Map[String, String]
   ): BaseRelation =
-    new TarantoolRelation(sqlContext, parameters, userSpecifiedSchema = None)
+    TarantoolRelation(sqlContext, parameters, userSpecifiedSchema = None)
 
   override def createRelation(
     sqlContext: SQLContext,
     parameters: Map[String, String],
     schema: StructType
   ): BaseRelation =
-    new TarantoolRelation(sqlContext, parameters, userSpecifiedSchema = Some(schema))
+    TarantoolRelation(sqlContext, parameters, userSpecifiedSchema = Some(schema))
 }
