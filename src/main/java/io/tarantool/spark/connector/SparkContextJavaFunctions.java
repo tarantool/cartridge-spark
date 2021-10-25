@@ -2,7 +2,7 @@ package io.tarantool.spark.connector;
 
 import io.tarantool.driver.api.conditions.Conditions;
 import io.tarantool.driver.api.tuple.TarantoolTuple;
-import io.tarantool.spark.connector.config.ReadConfig;
+import io.tarantool.spark.connector.config.ReadConfig$;
 import io.tarantool.spark.connector.rdd.TarantoolJavaRDD;
 import io.tarantool.spark.connector.rdd.TarantoolRDD;
 import io.tarantool.spark.connector.rdd.TarantoolRDD$;
@@ -67,8 +67,8 @@ public class SparkContextJavaFunctions {
      */
     public TarantoolJavaRDD<TarantoolTuple> tarantoolSpace(String spaceName, Conditions conditions) {
         TarantoolRDD<TarantoolTuple> rdd = TarantoolRDD$.MODULE$.apply(
-                sparkContext, spaceName, conditions,
-                ReadConfig.fromSparkConf(sparkContext.getConf()),
+                sparkContext,
+                ReadConfig$.MODULE$.apply(spaceName).withConditions(conditions),
                 getClassTag(TarantoolTuple.class));
         return new TarantoolJavaRDD<>(rdd, TarantoolTuple.class);
     }
@@ -88,8 +88,8 @@ public class SparkContextJavaFunctions {
     public <R> TarantoolJavaRDD<R> tarantoolSpace(String spaceName, Conditions conditions,
                                                   TupleConverterFactory<R> tupleConverterFactory) {
         TarantoolRDD<R> rdd = TarantoolRDD$.MODULE$.apply(
-                sparkContext, spaceName, conditions,
-                ReadConfig.fromSparkConf(sparkContext.getConf()),
+                sparkContext,
+                ReadConfig$.MODULE$.apply(spaceName).withConditions(conditions),
                 tupleConverterFactory.tupleConverter(),
                 getClassTag(tupleConverterFactory.targetClass()));
         return new TarantoolJavaRDD<>(rdd, tupleConverterFactory.targetClass());

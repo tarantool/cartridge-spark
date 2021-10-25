@@ -13,6 +13,17 @@ import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 import scala.reflect.ClassTag
 
+/**
+  * Tarantool RDD implementation
+  *
+  * @param sc spark context
+  * @param space Tarantool space name
+  * @param conditions tuple filtering conditions
+  * @param tupleConverter converter from {@link TarantoolTuple} to type `R`
+  * @param readConfig read request configuration
+  * @param ct class type tag
+  * @tparam R target POJO type
+  */
 class TarantoolRDD[R] private[spark] (
   @transient val sc: SparkContext,
   val space: String,
@@ -57,20 +68,16 @@ object TarantoolRDD {
 
   def apply[R](
     sc: SparkContext,
-    space: String,
-    conditions: Conditions,
     readConfig: ReadConfig,
     converter: TupleConverter[R]
   )(
     implicit
     ct: ClassTag[R]
   ): TarantoolRDD[R] =
-    new TarantoolRDD[R](sc, space, conditions, converter, readConfig)
+    new TarantoolRDD[R](sc, readConfig.spaceName, readConfig.conditions, converter, readConfig)
 
   def apply(
     sc: SparkContext,
-    space: String,
-    conditions: Conditions,
     readConfig: ReadConfig
   )(
     implicit
@@ -78,8 +85,8 @@ object TarantoolRDD {
   ): TarantoolRDD[TarantoolTuple] =
     new TarantoolRDD[TarantoolTuple](
       sc,
-      space,
-      conditions,
+      readConfig.spaceName,
+      readConfig.conditions,
       FunctionBasedTupleConverter(),
       readConfig
     )

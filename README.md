@@ -78,7 +78,7 @@ Using Scala:
     // 4. Load the whole space into a DataFrame
     val df = spark.read
       .format("org.apache.spark.sql.tarantool")
-      .option("space", "test_space")
+      .option("tarantool.space", "test_space")
       .load()
     
     // Space schema from Tarantool will be used for mapping the tuple fields
@@ -109,7 +109,7 @@ or Java:
     // 3. Load all tuples from a space into a Dataset
     Dataset<Row> ds = spark().read()
         .format("org.apache.spark.sql.tarantool")
-        .option("space", "test_space")
+        .option("tarantool.space", "test_space")
         .load();
 
     ds.select("id").rdd().toJavaRDD().map(row -> row.get(0)).collect();

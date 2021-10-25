@@ -58,7 +58,7 @@ class TarantoolSparkReadClusterClientTest
   test("Load the whole space into a DataFrame") {
     val df = spark.read
       .format("org.apache.spark.sql.tarantool")
-      .option("space", "test_space")
+      .option("tarantool.space", "test_space")
       .load()
 
     df.count() > 0 should equal(true)

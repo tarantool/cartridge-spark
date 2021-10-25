@@ -65,7 +65,7 @@ public class JavaSparkContextFunctionsTest extends SharedJavaSparkContext {
     public void testLoadTheWholeSpaceIntoDataFrame() {
         Dataset<Row> ds = spark().read()
                 .format("org.apache.spark.sql.tarantool")
-                .option("space", "test_space")
+                .option("tarantool.space", "test_space")
                 .load();
 
         assertTrue(ds.count() > 0);
