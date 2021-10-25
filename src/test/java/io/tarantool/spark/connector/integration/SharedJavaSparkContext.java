@@ -3,6 +3,7 @@ package io.tarantool.spark.connector.integration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.sql.SparkSession;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -32,20 +33,22 @@ public abstract class SharedJavaSparkContext {
         }
     }
 
-    protected static AtomicReference<JavaSparkContext> jsc = new AtomicReference<>();
-    private static String master = "local";
-    private static String appName = "tarantool-spark-test";
+    private final static AtomicReference<SparkSession> sparkSession = new AtomicReference<>();
+    private final static String master = "local";
+    private final static String appName = "tarantool-spark-test";
 
     @BeforeClass
     public static void beforeAll() {
         startCluster();
-        if (jsc.get() == null) {
-            jsc.compareAndSet(null, new JavaSparkContext(getSparkContext()));
+        if (sparkSession.get() == null) {
+            sparkSession.compareAndSet(null, getSparkSession());
         }
     }
 
-    private static SparkContext getSparkContext() {
-        return new SparkContext(confWithTarantoolProperties(container.getRouterPort()));
+    private static SparkSession getSparkSession() {
+        return SparkSession.builder()
+                .config(confWithTarantoolProperties(container.getRouterPort()))
+                .getOrCreate();
     }
 
     private static SparkConf confWithTarantoolProperties(Integer routerPort) {
@@ -59,11 +62,19 @@ public abstract class SharedJavaSparkContext {
         return _conf;
     }
 
+    protected static SparkSession spark() {
+        return sparkSession.get();
+    }
+
+    protected static JavaSparkContext jsc() {
+        return new JavaSparkContext(sparkSession.get().sparkContext());
+    }
+
     @AfterClass
     public static void afterAll() {
-        JavaSparkContext scRef = jsc.get();
-        if (jsc.compareAndSet(scRef, null)) {
-            scRef.stop();
+        SparkSession sessionRef = sparkSession.get();
+        if (sparkSession.compareAndSet(sessionRef, null)) {
+            sessionRef.stop();
         }
         container.stop();
     }

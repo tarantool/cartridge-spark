@@ -105,6 +105,14 @@ or Java:
             book.year = t.getInteger("year");
             return book;
         }, Book.class).collect();
+    
+    // 3. Load all tuples from a space into a Dataset
+    Dataset<Row> ds = spark().read()
+        .format("org.apache.spark.sql.tarantool")
+        .option("space", "test_space")
+        .load();
+
+    ds.select("id").rdd().toJavaRDD().map(row -> row.get(0)).collect();
 ```
 
 ## Learn more

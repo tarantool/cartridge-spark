@@ -1,9 +1,11 @@
-package io.tarantool.spark.connector.rdd;
+package io.tarantool.spark.connector;
 
 import io.tarantool.driver.api.conditions.Conditions;
 import io.tarantool.driver.api.tuple.TarantoolTuple;
-import io.tarantool.spark.connector.SparkContextFunctions;
 import io.tarantool.spark.connector.config.ReadConfig;
+import io.tarantool.spark.connector.rdd.TarantoolJavaRDD;
+import io.tarantool.spark.connector.rdd.TarantoolRDD;
+import io.tarantool.spark.connector.rdd.TarantoolRDD$;
 import io.tarantool.spark.connector.rdd.converter.FunctionBasedTupleConverterFactory;
 import io.tarantool.spark.connector.rdd.converter.TupleConverterFactory;
 import org.apache.spark.SparkContext;
@@ -106,8 +108,8 @@ public class SparkContextJavaFunctions {
      * @return instance of {@link TarantoolJavaRDD}
      */
     public <R> TarantoolJavaRDD<R> tarantoolSpace(String spaceName, Conditions conditions,
-                                                         SerializableFunction<TarantoolTuple, R> tupleConverter,
-                                                         Class<R> targetClass) {
+                                                  SerializableFunction<TarantoolTuple, R> tupleConverter,
+                                                  Class<R> targetClass) {
         TupleConverterFactory<R> converterFactory = new FunctionBasedTupleConverterFactory<>(
                 toScalaFunction1(tupleConverter),
                 getClassTag(targetClass)

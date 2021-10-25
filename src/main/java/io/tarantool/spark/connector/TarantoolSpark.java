@@ -1,4 +1,4 @@
-package io.tarantool.spark.connector.rdd;
+package io.tarantool.spark.connector;
 
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
