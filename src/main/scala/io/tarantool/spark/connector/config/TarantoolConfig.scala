@@ -1,6 +1,6 @@
 package io.tarantool.spark.connector.config
 
-import io.tarantool.driver.TarantoolServerAddress
+import io.tarantool.driver.api.TarantoolServerAddress
 import org.apache.spark.SparkConf
 
 case class Credentials(username: String, password: String)

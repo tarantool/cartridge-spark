@@ -1,6 +1,6 @@
 package org.apache.spark.sql.tarantool
 
-import io.tarantool.driver.metadata.TestTarantoolMetadata
+import io.tarantool.driver.api.metadata.TestTarantoolMetadata
 import org.apache.spark.sql.types._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.must.Matchers.contain

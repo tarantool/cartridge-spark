@@ -1,7 +1,7 @@
 package org.apache.spark.sql.tarantool
 
+import io.tarantool.driver.api.metadata.TarantoolMetadataOperations
 import io.tarantool.driver.exceptions.TarantoolSpaceNotFoundException
-import io.tarantool.driver.metadata.TarantoolMetadataOperations
 import io.tarantool.spark.connector.config.TarantoolConfig
 import io.tarantool.spark.connector.connection.TarantoolConnection
 import io.tarantool.spark.connector.util.ScalaToJavaHelper.toJavaSupplier

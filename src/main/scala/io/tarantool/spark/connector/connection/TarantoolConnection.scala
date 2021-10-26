@@ -1,15 +1,15 @@
 package io.tarantool.spark.connector.connection
 
 import io.tarantool.driver.api.tuple.TarantoolTuple
-import io.tarantool.driver.api.{TarantoolClient, TarantoolResult}
-import io.tarantool.driver.auth.SimpleTarantoolCredentials
-import io.tarantool.driver.protocol.Packable
-import io.tarantool.driver.{
-  ClusterTarantoolTupleClient,
-  ProxyTarantoolTupleClient,
+import io.tarantool.driver.api.{
+  TarantoolClient,
   TarantoolClientConfig,
+  TarantoolResult,
   TarantoolServerAddress
 }
+import io.tarantool.driver.auth.SimpleTarantoolCredentials
+import io.tarantool.driver.core.{ClusterTarantoolTupleClient, ProxyTarantoolTupleClient}
+import io.tarantool.driver.protocol.Packable
 import io.tarantool.spark.connector.Logging
 import io.tarantool.spark.connector.config.{StaticClusterAddressProvider, TarantoolConfig}
 
@@ -23,12 +23,12 @@ import scala.reflect.ClassTag
 object TarantoolConnection {
 
   def apply(): TarantoolConnection[TarantoolTuple, TarantoolResult[TarantoolTuple]] =
-    new TarantoolConnection(defaultClient)
+    TarantoolConnection(defaultClient)
 
   private def defaultClient(
     clientConfig: TarantoolClientConfig,
     hosts: Seq[TarantoolServerAddress]
-  ): ProxyTarantoolTupleClient =
+  ): TarantoolClient[TarantoolTuple, TarantoolResult[TarantoolTuple]] =
     new ProxyTarantoolTupleClient(
       new ClusterTarantoolTupleClient(clientConfig, new StaticClusterAddressProvider(hosts))
     )
@@ -51,8 +51,8 @@ class TarantoolConnection[T <: Packable, R <: util.Collection[T]](
     with Closeable
     with Logging {
 
-  @transient private var _tarantoolConfig: Option[TarantoolClientConfig] = None
-  @transient private var _tarantoolClient: Option[TarantoolClient[T, R]] = None
+  @transient @volatile private var _tarantoolConfig: Option[TarantoolClientConfig] = None
+  @transient @volatile private var _tarantoolClient: Option[TarantoolClient[T, R]] = None
 
   def client(cnf: TarantoolConfig): TarantoolClient[T, R] = {
     if (_tarantoolConfig.isEmpty) {

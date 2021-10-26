@@ -1,13 +1,13 @@
 package org.apache.spark.sql.tarantool
 
-import io.tarantool.driver.DefaultTarantoolTupleFactory
-import io.tarantool.driver.api.tuple.TarantoolTupleImpl
-import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory
-import io.tarantool.driver.metadata.{
+import io.tarantool.driver.api.metadata.{
   TestSpaceMetadata,
   TestSpaceWithArrayMetadata,
   TestSpaceWithMapMetadata
 }
+import io.tarantool.driver.api.tuple.DefaultTarantoolTupleFactory
+import io.tarantool.driver.core.tuple.TarantoolTupleImpl
+import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 import org.scalatest.Inspectors.forAll
@@ -30,32 +30,32 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
 
   private val simpleSchema = StructType(
     Array(
-      StructField("firstname", StringType, true),
-      StructField("middlename", StringType, true),
-      StructField("lastname", StringType, true),
-      StructField("id", StringType, true),
-      StructField("age", IntegerType, true),
-      StructField("salary", DecimalType.USER_DEFAULT, true),
-      StructField("discount", FloatType, true),
-      StructField("favourite_constant", DoubleType, true),
-      StructField("married", BooleanType, true),
-      StructField("updated", LongType, true)
+      StructField("firstname", StringType, nullable = true),
+      StructField("middlename", StringType, nullable = true),
+      StructField("lastname", StringType, nullable = true),
+      StructField("id", StringType, nullable = true),
+      StructField("age", IntegerType, nullable = true),
+      StructField("salary", DecimalType.USER_DEFAULT, nullable = true),
+      StructField("discount", FloatType, nullable = true),
+      StructField("favourite_constant", DoubleType, nullable = true),
+      StructField("married", BooleanType, nullable = true),
+      StructField("updated", LongType, nullable = true)
     )
   )
 
   private val simpleSchemaWithArray = StructType(
     Array(
-      StructField("order_id", StringType, true),
-      StructField("order_items", DataTypes.createArrayType(IntegerType), true),
-      StructField("updated", LongType, true)
+      StructField("order_id", StringType, nullable = true),
+      StructField("order_items", DataTypes.createArrayType(IntegerType), nullable = true),
+      StructField("updated", LongType, nullable = true)
     )
   )
 
   private val simpleSchemaWithMap = StructType(
     Array(
-      StructField("id", StringType, true),
-      StructField("settings", DataTypes.createMapType(StringType, StringType), true),
-      StructField("updated", LongType, true)
+      StructField("id", StringType, nullable = true),
+      StructField("settings", DataTypes.createMapType(StringType, StringType), nullable = true),
+      StructField("updated", LongType, nullable = true)
     )
   )
 

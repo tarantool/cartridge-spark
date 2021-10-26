@@ -1,8 +1,7 @@
 package io.tarantool.spark.connector.integration
 
-import io.tarantool.driver.DefaultTarantoolTupleFactory
 import io.tarantool.driver.api.conditions.Conditions
-import io.tarantool.driver.api.tuple.TarantoolTuple
+import io.tarantool.driver.api.tuple.{DefaultTarantoolTupleFactory, TarantoolTuple}
 import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory
 import io.tarantool.spark.connector.config.TarantoolConfig
 import io.tarantool.spark.connector.connection.TarantoolConnection

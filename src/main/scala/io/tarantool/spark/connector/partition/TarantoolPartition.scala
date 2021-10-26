@@ -1,6 +1,6 @@
 package io.tarantool.spark.connector.partition
 
-import io.tarantool.driver.TarantoolServerAddress
+import io.tarantool.driver.api.TarantoolServerAddress
 import io.tarantool.driver.api.conditions.Conditions
 import org.apache.spark.Partition
 

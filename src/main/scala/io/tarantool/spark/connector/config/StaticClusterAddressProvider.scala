@@ -1,6 +1,6 @@
 package io.tarantool.spark.connector.config
 
-import io.tarantool.driver.{TarantoolClusterAddressProvider, TarantoolServerAddress}
+import io.tarantool.driver.api.{TarantoolClusterAddressProvider, TarantoolServerAddress}
 
 import java.util
 
