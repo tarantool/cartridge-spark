@@ -104,7 +104,8 @@ lazy val root = (project in file("."))
       else
         Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
     },
-    publishMavenStyle := true
+    publishMavenStyle := true,
+    releaseUseGlobalVersion := false
   )
 
 // Repositories
