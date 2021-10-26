@@ -47,13 +47,11 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Serializabl
     implicit
     ct: ClassTag[R],
     sparkContext: SparkContext = sc,
-    readConfig: ReadConfig = ReadConfig(),
+    readConfig: ReadConfig = ReadConfig(space).withConditions(conditions),
     tupleConverterFactory: TupleConverterFactory[R]
   ): TarantoolRDD[R] =
     TarantoolRDD(
       sparkContext,
-      space,
-      conditions,
       readConfig,
       tupleConverterFactory.tupleConverter()
     )
