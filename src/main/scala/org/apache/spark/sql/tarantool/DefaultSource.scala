@@ -2,21 +2,20 @@ package org.apache.spark.sql.tarantool
 
 import io.tarantool.spark.connector.config.ReadConfig
 import io.tarantool.spark.connector.rdd.TarantoolRDD
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.sources.{
-  BaseRelation,
-  DataSourceRegister,
-  RelationProvider,
-  SchemaRelationProvider
-}
+import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode}
 
 /**
   * DataSourceV2 implementation for Tarantool
   *
   * @author Alexey Kuzin
   */
-class DefaultSource extends DataSourceRegister with RelationProvider with SchemaRelationProvider {
+class DefaultSource
+    extends DataSourceRegister
+    with RelationProvider
+    with SchemaRelationProvider
+    with CreatableRelationProvider {
   override def shortName(): String = "tarantool"
 
   override def createRelation(
@@ -31,6 +30,34 @@ class DefaultSource extends DataSourceRegister with RelationProvider with Schema
     schema: StructType
   ): BaseRelation =
     constructRelation(sqlContext, parameters, Some(schema))
+
+  override def createRelation(
+    sqlContext: SQLContext,
+    mode: SaveMode,
+    parameters: Map[String, String],
+    data: DataFrame
+  ): BaseRelation = {
+    val relation = constructRelation(sqlContext, parameters, Some(data.schema))
+
+    mode match {
+      case SaveMode.Append    => relation.rdd.insert(data, overwrite = false)
+      case SaveMode.Overwrite => relation.rdd.insert(data, overwrite = true)
+      case SaveMode.ErrorIfExists =>
+        if (relation.nonEmpty) {
+          throw new IllegalStateException(
+            "SaveMode is set to ErrorIfExists and dataframe " +
+              "already exists in Tarantool and contains data."
+          )
+        }
+        relation.rdd.insert(data, overwrite = false)
+      case SaveMode.Ignore =>
+        if (relation.isEmpty) {
+          relation.rdd.insert(data, overwrite = false)
+        }
+    }
+
+    relation
+  }
 
   private def constructRelation(
     sqlContext: SQLContext,

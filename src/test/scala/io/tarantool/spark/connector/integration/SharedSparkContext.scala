@@ -1,7 +1,7 @@
 package io.tarantool.spark.connector.integration
 
 import io.tarantool.spark.connector.containers.TarantoolCartridgeContainer
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{SQLImplicits, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
@@ -59,6 +59,8 @@ trait SharedSparkContext extends BeforeAndAfterAll { self: Suite =>
 
   def spark: SparkSession =
     sparkSession.get()
+
+  protected lazy val sqlImplicits: SQLImplicits = spark.implicits
 
   override def afterAll(): Unit = {
     super.afterAll()

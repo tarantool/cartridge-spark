@@ -1,17 +1,30 @@
 package org.apache.spark.sql.tarantool
 
-import io.tarantool.driver.api.tuple.{TarantoolField, TarantoolTuple}
+import io.tarantool.driver.api.tuple.{TarantoolField, TarantoolTuple, TarantoolTupleFactory}
 import io.tarantool.driver.mappers.MessagePackValueMapper
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types._
+
+import java.lang.{
+  Boolean => JBoolean,
+  Byte => JByte,
+  Character => JCharacter,
+  Double => JDouble,
+  Float => JFloat,
+  Integer => JInteger,
+  Long => JLong,
+  Short => JShort
+}
+import java.util.{ArrayList => JList, HashMap => JMap}
+import scala.collection.JavaConverters.{mapAsJavaMapConverter, seqAsJavaListConverter}
 
 /**
   * Contains methods for mapping Tarantool tuples to Spark DataSet rows
   *
   * @author Alexey Kuzin
   */
-private[spark] object MapFunctions {
+object MapFunctions {
 
   def tupleToRow(
     tuple: TarantoolTuple,
@@ -47,7 +60,7 @@ private[spark] object MapFunctions {
     tupleField: TarantoolField,
     dataType: DataType,
     mapper: MessagePackValueMapper
-  ) = {
+  ): Any = {
     val javaType = Some(dataTypeToJavaClass(dataType))
     if (javaType.isEmpty) {
       throw new RuntimeException(s"$dataType is not supported for conversion")
@@ -73,5 +86,49 @@ private[spark] object MapFunctions {
       case arrayType: ArrayType =>
         val valueClass = dataTypeToJavaClass(arrayType.elementType)
         classOf[java.util.List[valueClass.type]]
+    }
+
+  def rowToTuple(tupleFactory: TarantoolTupleFactory, row: Row): TarantoolTuple =
+    tupleFactory.create(row.toSeq.map(value => mapToJavaValue(value)).asJava)
+
+  def mapToJavaValue(value: Any): Any =
+    value match {
+      case value: Map[_, _]   => mapMapValue(value)
+      case value: Iterable[_] => mapIterableValue(value)
+      case value: Any         => mapSimpleValue(value)
+    }
+
+  def mapMapValue[K, V](value: Map[_, _]): JMap[K, V] =
+    new JMap[K, V](
+      value.toSeq
+        .map(tuple =>
+          Tuple2(
+            mapToJavaValue(tuple._1).asInstanceOf[K],
+            mapToJavaValue(tuple._2).asInstanceOf[V]
+          )
+        )
+        .toMap
+        .asJava
+    )
+
+  def mapIterableValue[V](value: Iterable[_]): JList[V] = {
+    val javaList = new JList[V](value.size)
+    javaList.addAll(value.map(item => mapToJavaValue(item).asInstanceOf[V]).toSeq.asJava)
+    javaList
+  }
+
+  def mapSimpleValue(value: Any): Any =
+    value match {
+      case value: BigInt     => value.underlying()
+      case value: BigDecimal => value.underlying()
+      case value: Boolean    => value.booleanValue().asInstanceOf[JBoolean]
+      case value: Byte       => value.underlying().asInstanceOf[JByte]
+      case value: Char       => value.underlying().asInstanceOf[JCharacter]
+      case value: Short      => value.underlying().asInstanceOf[JShort]
+      case value: Int        => value.underlying().asInstanceOf[JInteger]
+      case value: Long       => value.underlying().asInstanceOf[JLong]
+      case value: Float      => value.underlying().asInstanceOf[JFloat]
+      case value: Double     => value.underlying().asInstanceOf[JDouble]
+      case value: Any        => identity(value)
     }
 }

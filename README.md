@@ -48,6 +48,13 @@ libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.1.1"
 | tarantool.requestTimeout                | request completion timeout, in milliseconds          | 2000            |
 | tarantool.cursorBatchSize               | default limit for prefetching tuples in RDD iterator | 1000            |
 
+### Dataset API request options
+
+| property-key                            | description                                    | default value   |
+| --------------------------------------- | -----------------------------------------------| --------------- |
+| tarantool.space                         | Tarantool space name                           |                 |
+| tarantool.batchSize                     | limit of records to be read or written at once | 1000            |
+
 #### Example
 
 Using Scala:

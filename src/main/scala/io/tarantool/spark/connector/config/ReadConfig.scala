@@ -15,33 +15,10 @@ case class ReadConfig(
     copy(conditions = conditions)
 }
 
-object ReadConfig {
-
-  // TODO: create a class for config parameters
-  private val SPARK_PREFIX = "spark."
-  private val PREFIX = "tarantool."
+object ReadConfig extends TarantoolConfigBase {
 
   private val SPACE_NAME = "space"
   private val CURSOR_BATCH_SIZE = "cursorBatchSize"
-
-  private def getFromSparkConfOrOptions(
-    sparkConf: SparkConf,
-    options: Option[Map[String, String]],
-    option: String
-  ): Option[String] =
-    options match {
-      case Some(options) =>
-        options
-          .get(PREFIX + option)
-          .orElse(options.get(SPARK_PREFIX + option))
-          .orElse(getFromSparkConf(sparkConf, option))
-      case None => getFromSparkConf(sparkConf, option)
-    }
-
-  private def getFromSparkConf(sparkConf: SparkConf, option: String): Option[String] =
-    sparkConf
-      .getOption(PREFIX + option)
-      .orElse(sparkConf.getOption(SPARK_PREFIX + option))
 
   def apply(sparkConf: SparkConf, options: Option[Map[String, String]]): ReadConfig =
     new ReadConfig(
