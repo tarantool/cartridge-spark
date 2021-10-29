@@ -17,14 +17,14 @@ You can link against this library for Maven in your program at the following coo
 <dependency>
   <groupId>io.tarantool</groupId>
   <artifactId>spark-tarantool-connector</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>0.1.1</version>
 </dependency>
 ```
 
 or for `sbt`:
 
 ```
-libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "1.0.0-SNAPSHOT"
+libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.1.1"
 ```
 
 ## Version Compatibility
