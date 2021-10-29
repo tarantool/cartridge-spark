@@ -1,14 +1,17 @@
 package io.tarantool.spark.connector.rdd
 
 import io.tarantool.driver.api.conditions.Conditions
-import io.tarantool.driver.api.tuple.TarantoolTuple
+import io.tarantool.driver.api.tuple.{DefaultTarantoolTupleFactory, TarantoolTuple}
 import io.tarantool.driver.api.{TarantoolClient, TarantoolResult}
+import io.tarantool.driver.mappers.{DefaultMessagePackMapperFactory, MessagePackMapper}
 import io.tarantool.spark.connector.config.{ReadConfig, TarantoolConfig}
 import io.tarantool.spark.connector.connection.TarantoolConnection
 import io.tarantool.spark.connector.partition.TarantoolPartition
 import io.tarantool.spark.connector.rdd.converter.{FunctionBasedTupleConverter, TupleConverter}
 import io.tarantool.spark.connector.util.TarantoolCursorIterator
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.tarantool.MapFunctions.rowToTuple
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 import scala.reflect.ClassTag
@@ -31,10 +34,16 @@ class TarantoolRDD[R] private[spark] (
   val tupleConverter: TupleConverter[R],
   val readConfig: ReadConfig
 )(
-  implicit val ct: ClassTag[R]
+  implicit val ct: ClassTag[R],
+  implicit val messagePackMapper: MessagePackMapper =
+    DefaultMessagePackMapperFactory.getInstance().defaultComplexTypesMapper()
 ) extends RDD[R](sc, Seq.empty) {
 
   private val globalConfig = TarantoolConfig(sparkContext.getConf)
+
+  @transient private lazy val tupleFactory = new DefaultTarantoolTupleFactory(
+    messagePackMapper
+  )
 
   override def compute(split: Partition, context: TaskContext): Iterator[R] = {
     val partition = split.asInstanceOf[TarantoolPartition]
@@ -62,6 +71,26 @@ class TarantoolRDD[R] private[spark] (
 
   override protected def getPartitions: Array[Partition] =
     readConfig.partitioner.partitions(globalConfig.hosts, conditions).asInstanceOf[Array[Partition]]
+
+  def insert(data: DataFrame, overwrite: Boolean): Unit =
+    data.foreachPartition((partition: Iterator[Row]) =>
+      if (partition.nonEmpty) {
+        val connection = TarantoolConnection()
+        val client = connection.client(globalConfig)
+
+        partition.foreach { row =>
+          if (overwrite) {
+            //TODO use batches when implemented in driver
+            //TODO insert bucket ID on the driver side automatically
+            client.space(space).replace(rowToTuple(tupleFactory, row))
+          } else {
+            client.space(space).insert(rowToTuple(tupleFactory, row))
+          }
+        }
+
+        client.close()
+      }
+    )
 }
 
 object TarantoolRDD {

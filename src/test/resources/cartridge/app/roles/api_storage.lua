@@ -43,6 +43,33 @@ local function init_space()
         unique = true,
         if_not_exists = true,
     })
+
+    local orders = box.schema.space.create(
+        'orders',
+        {
+            format = {
+                { name = 'id', type = 'unsigned' },
+                { name = 'bucket_id', type = 'unsigned' },
+                { name = 'order_type', type = 'string' },
+                { name = 'order_value', type = 'number' },
+                { name = 'order_items', type = 'array' },
+                { name = 'options', type = 'map' },
+                { name = 'cleared', type = 'boolean' },
+            },
+            if_not_exists = true,
+        }
+    )
+
+    orders:create_index('id', {
+        parts = { 'id' },
+        if_not_exists = true,
+    })
+
+    orders:create_index('bucket_id', {
+        parts = { 'bucket_id' },
+        unique = false,
+        if_not_exists = true,
+    })
 end
 
 local function init(opts)
