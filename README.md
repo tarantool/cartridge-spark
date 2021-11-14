@@ -62,7 +62,7 @@ Using Scala:
     // 1. Set up the Spark session
     val spark = SparkSession.builder()
        .config("tarantool.hosts", "127.0.0.1:3301")
-       .config("tarantool.user", "admin")
+       .config("tarantool.username", "admin")
        .config("tarantool.password", "password")
        .getOrCreate()
     
@@ -97,7 +97,7 @@ or Java:
     // 1. Set up the Spark context
     SparkConf conf = new SparkConf()
         .set("tarantool.hosts", "127.0.0.1:3301")
-        .set("tarantool.user", "admin")
+        .set("tarantool.username", "admin")
         .set("tarantool.password", "password");
 
     JavaSparkContext jsc = new JavaSparkContext(conf);
