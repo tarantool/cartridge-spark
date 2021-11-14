@@ -4,16 +4,21 @@ import io.tarantool.driver.api.conditions.Conditions
 import io.tarantool.driver.api.tuple.{DefaultTarantoolTupleFactory, TarantoolTuple}
 import io.tarantool.driver.api.{TarantoolClient, TarantoolResult}
 import io.tarantool.driver.mappers.{DefaultMessagePackMapperFactory, MessagePackMapper}
+import io.tarantool.spark.connector.TarantoolSparkException
 import io.tarantool.spark.connector.config.{ReadConfig, TarantoolConfig}
 import io.tarantool.spark.connector.connection.TarantoolConnection
 import io.tarantool.spark.connector.partition.TarantoolPartition
 import io.tarantool.spark.connector.rdd.converter.{FunctionBasedTupleConverter, TupleConverter}
+import io.tarantool.spark.connector.util.ScalaToJavaHelper.{toJavaConsumer, toJavaFunction}
 import io.tarantool.spark.connector.util.TarantoolCursorIterator
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.tarantool.MapFunctions.rowToTuple
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.{Partition, SparkContext, TaskContext}
 
+import java.io.{PrintWriter, StringWriter}
+import java.util.concurrent.CompletableFuture
+import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
 
 /**
@@ -51,7 +56,7 @@ class TarantoolRDD[R] private[spark] (
     val client = connection.client(globalConfig)
     val cursorIterator = createCursorIterator(client, partition)
 
-    context.addTaskCompletionListener { context =>
+    context.addTaskCompletionListener { context: TaskContext =>
       connection.close()
       context
     }
@@ -78,17 +83,57 @@ class TarantoolRDD[R] private[spark] (
         val connection = TarantoolConnection()
         val client = connection.client(globalConfig)
 
-        partition.foreach { row =>
-          if (overwrite) {
-            //TODO use batches when implemented in driver
-            //TODO insert bucket ID on the driver side automatically
-            client.space(space).replace(rowToTuple(tupleFactory, row))
-          } else {
-            client.space(space).insert(rowToTuple(tupleFactory, row))
-          }
-        }
+        var rowCount: Long = 0
+        val failedRowsExceptions: ListBuffer[Throwable] = ListBuffer()
+        val allFutures =
+          partition
+            .map {
+              row =>
+                val future: CompletableFuture[TarantoolResult[TarantoolTuple]] = {
+                  if (overwrite) {
+                    client.space(space).replace(rowToTuple(tupleFactory, row))
+                  } else {
+                    client.space(space).insert(rowToTuple(tupleFactory, row))
+                  }
+                }
+                future
+                  .exceptionally(toJavaFunction { exception: Throwable =>
+                    failedRowsExceptions += exception
+                    null
+                  })
+                  .thenApply(toJavaFunction { result: TarantoolResult[TarantoolTuple] =>
+                    rowCount += 1
+                    result
+                  })
+            }
+            .toArray[CompletableFuture[_]]
 
-        client.close()
+        CompletableFuture
+          .allOf(allFutures: _*)
+          .thenAccept(toJavaConsumer {
+            _: Void =>
+              try {
+                if (failedRowsExceptions.nonEmpty) {
+                  val sw: StringWriter = new StringWriter()
+                  val pw: PrintWriter = new PrintWriter(sw)
+                  try {
+                    failedRowsExceptions.foreach { exception =>
+                      pw.append("\n\n")
+                      exception.printStackTrace(pw)
+                    }
+                    throw new TarantoolSparkException("Dataset write failed: " + sw.toString)
+                  } finally {
+                    pw.close()
+                  }
+                } else {
+                  logInfo(s"Dataset write success, $rowCount rows written")
+                }
+              } finally {
+                client.close()
+              }
+          })
+          .get()
+          .asInstanceOf[Unit]
       }
     )
 }
