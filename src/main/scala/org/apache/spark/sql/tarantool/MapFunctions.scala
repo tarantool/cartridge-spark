@@ -89,13 +89,24 @@ object MapFunctions {
     }
 
   def rowToTuple(tupleFactory: TarantoolTupleFactory, row: Row): TarantoolTuple =
-    tupleFactory.create(row.toSeq.map(value => mapToJavaValue(value)).asJava)
+    tupleFactory.create(
+      row.toSeq
+        .map(value => mapToJavaValue(Option(value)))
+        .map(nullableValue => nullableValue.orNull)
+        .asJava
+    )
 
-  def mapToJavaValue(value: Any): Any =
-    value match {
-      case value: Map[_, _]   => mapMapValue(value)
-      case value: Iterable[_] => mapIterableValue(value)
-      case value: Any         => mapSimpleValue(value)
+  def mapToJavaValue(value: Option[Any]): Option[Any] =
+    if (value.isDefined) {
+      Option(
+        value.get match {
+          case value: Map[_, _]   => mapMapValue(value)
+          case value: Iterable[_] => mapIterableValue(value)
+          case value: Any         => mapSimpleValue(value)
+        }
+      )
+    } else {
+      Option.empty
     }
 
   def mapMapValue[K, V](value: Map[_, _]): JMap[K, V] =
@@ -103,8 +114,8 @@ object MapFunctions {
       value.toSeq
         .map(tuple =>
           Tuple2(
-            mapToJavaValue(tuple._1).asInstanceOf[K],
-            mapToJavaValue(tuple._2).asInstanceOf[V]
+            mapToJavaValue(Option(tuple._1)).orNull.asInstanceOf[K],
+            mapToJavaValue(Option(tuple._2)).orNull.asInstanceOf[V]
           )
         )
         .toMap
@@ -113,7 +124,9 @@ object MapFunctions {
 
   def mapIterableValue[V](value: Iterable[_]): JList[V] = {
     val javaList = new JList[V](value.size)
-    javaList.addAll(value.map(item => mapToJavaValue(item).asInstanceOf[V]).toSeq.asJava)
+    javaList.addAll(
+      value.map(item => mapToJavaValue(Option(item)).orNull.asInstanceOf[V]).toSeq.asJava
+    )
     javaList
   }
 
