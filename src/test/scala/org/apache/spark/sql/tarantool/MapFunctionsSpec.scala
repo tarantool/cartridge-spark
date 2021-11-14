@@ -15,7 +15,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
-import scala.collection.JavaConverters.{mapAsJavaMapConverter, seqAsJavaListConverter}
+import scala.collection.JavaConverters.{
+  iterableAsScalaIterableConverter,
+  mapAsJavaMapConverter,
+  seqAsJavaListConverter
+}
 
 /**
   *
@@ -152,5 +156,109 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
     row.length should equal(simpleSchemaWithMap.length)
 
     forAll(row.toSeq.zip(expected.toSeq))(tuple => tuple._1 should equal(tuple._2))
+  }
+
+  it should "convert an empty row to an empty tuple" in {
+    val row = Row()
+    val tuple = MapFunctions.rowToTuple(tupleFactory, row)
+
+    tuple should not be null
+    tuple.size should equal(0)
+  }
+
+  it should "convert a row with simple values of different types" in {
+    val time = Instant.now().getEpochSecond
+    val row = Row(
+      "Akakiy",
+      "Akakievich",
+      "Ivanov",
+      null,
+      38,
+      new java.math.BigDecimal(200),
+      0.5f,
+      Math.PI,
+      false,
+      time
+    )
+
+    val tuple = MapFunctions.rowToTuple(tupleFactory, row)
+
+    val expected = new TarantoolTupleImpl(
+      Seq(
+        "Akakiy",
+        "Akakievich",
+        "Ivanov",
+        null,
+        38,
+        new java.math.BigDecimal(200),
+        0.5f,
+        Math.PI,
+        false,
+        time
+      ).asJava,
+      defaultMapper,
+      TestSpaceMetadata()
+    )
+
+    tuple should not be null
+    tuple.size should equal(simpleSchema.length)
+
+    for ((f1, f2) <- tuple.asScala.toSeq.zip(expected.asScala.toSeq)) {
+      f1 should equal(f2)
+    }
+  }
+
+  it should "convert a row with array values" in {
+    val time = Instant.now().getEpochSecond
+    val row = Row(
+      null,
+      List(1, 2, 3, 4).asJava,
+      time
+    )
+
+    val tuple = MapFunctions.rowToTuple(tupleFactory, row)
+    val expected = new TarantoolTupleImpl(
+      Seq(
+        null,
+        List(1, 2, 3, 4).asJava,
+        time
+      ).asJava,
+      defaultMapper,
+      TestSpaceWithArrayMetadata()
+    )
+
+    tuple should not be null
+    tuple.size should equal(simpleSchemaWithArray.length)
+
+    for ((f1, f2) <- tuple.asScala.toSeq.zip(expected.asScala.toSeq)) {
+      f1 should equal(f2)
+    }
+  }
+
+  it should "convert a row with map values" in {
+    val time = Instant.now().getEpochSecond
+    val row = Row(
+      null,
+      Map("host" -> "127.0.0.1", "port" -> "3301").asJava,
+      time
+    )
+
+    val tuple = MapFunctions.rowToTuple(tupleFactory, row)
+    val expected = new TarantoolTupleImpl(
+      Seq(
+        null,
+        Map("host" -> "127.0.0.1", "port" -> "3301").asJava,
+        time
+      ).asJava,
+      defaultMapper,
+      TestSpaceWithMapMetadata()
+    )
+
+    tuple should not be null
+    tuple.size should equal(simpleSchemaWithMap.length)
+
+    for ((f1, f2) <- tuple.asScala.toSeq.zip(expected.asScala.toSeq)) {
+      f1 should equal(f2)
+    }
   }
 }
