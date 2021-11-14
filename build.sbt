@@ -124,5 +124,6 @@ ThisBuild / Test / parallelExecution := false
 ThisBuild / Test / logBuffered := false
 
 // Settings for scoverage plug-in
-ThisBuild / coverageEnabled := true
+// Disabled until this bug is fixed: https://github.com/scoverage/sbt-scoverage/issues/306
+// ThisBuild / coverageEnabled := true
 ThisBuild / coverageHighlighting := true
