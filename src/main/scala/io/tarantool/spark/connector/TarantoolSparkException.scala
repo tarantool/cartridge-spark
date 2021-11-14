@@ -7,10 +7,16 @@ import io.tarantool.driver.exceptions.TarantoolException
   *
   * @author Alexey Kuzin
   */
-case class TarantoolSparkException(message: String) extends TarantoolException(message) {}
+trait TarantoolSparkException extends TarantoolException {}
 
 object TarantoolSparkException {
 
-  def TarantoolSparkException(message: String): TarantoolSparkException =
-    new TarantoolSparkException(message)
+  def apply(message: String): TarantoolSparkException =
+    new TarantoolException(message) with TarantoolSparkException
+
+  def apply(exception: Throwable): TarantoolSparkException =
+    new TarantoolException(exception) with TarantoolSparkException
+
+  def apply(message: String, exception: Throwable): TarantoolSparkException =
+    new TarantoolException(message, exception) with TarantoolSparkException
 }

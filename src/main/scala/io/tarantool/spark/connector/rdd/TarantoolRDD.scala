@@ -9,7 +9,11 @@ import io.tarantool.spark.connector.config.{ReadConfig, TarantoolConfig}
 import io.tarantool.spark.connector.connection.TarantoolConnection
 import io.tarantool.spark.connector.partition.TarantoolPartition
 import io.tarantool.spark.connector.rdd.converter.{FunctionBasedTupleConverter, TupleConverter}
-import io.tarantool.spark.connector.util.ScalaToJavaHelper.{toJavaConsumer, toJavaFunction}
+import io.tarantool.spark.connector.util.ScalaToJavaHelper.{
+  toJavaBiFunction,
+  toJavaConsumer,
+  toJavaFunction
+}
 import io.tarantool.spark.connector.util.TarantoolCursorIterator
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.tarantool.MapFunctions.rowToTuple
@@ -108,11 +112,12 @@ class TarantoolRDD[R] private[spark] (
             }
             .toArray[CompletableFuture[_]]
 
-        CompletableFuture
-          .allOf(allFutures: _*)
-          .thenAccept(toJavaConsumer {
-            _: Void =>
-              try {
+        var savedException: Throwable = null
+        try {
+          CompletableFuture
+            .allOf(allFutures: _*)
+            .handle(toJavaBiFunction {
+              (_: Void, exception: Throwable) =>
                 if (failedRowsExceptions.nonEmpty) {
                   val sw: StringWriter = new StringWriter()
                   val pw: PrintWriter = new PrintWriter(sw)
@@ -121,19 +126,34 @@ class TarantoolRDD[R] private[spark] (
                       pw.append("\n\n")
                       exception.printStackTrace(pw)
                     }
-                    throw new TarantoolSparkException("Dataset write failed: " + sw.toString)
+                    savedException = TarantoolSparkException("Dataset write failed: " + sw.toString)
+                    logError(savedException.getMessage)
                   } finally {
                     pw.close()
                   }
                 } else {
-                  logInfo(s"Dataset write success, $rowCount rows written")
+                  if (Option(exception).isDefined) {
+                    savedException = exception
+                    logError("Dataset write failed: ", savedException)
+                  } else {
+                    logInfo(s"Dataset write success, $rowCount rows written")
+                  }
                 }
-              } finally {
-                client.close()
-              }
-          })
-          .get()
-          .asInstanceOf[Unit]
+                null
+            })
+            .join()
+        } catch {
+          case throwable: Throwable => savedException = throwable
+        } finally {
+          client.close()
+        }
+
+        if (Option(savedException).isDefined) {
+          savedException match {
+            case e: RuntimeException => throw e
+            case e: Any              => throw TarantoolSparkException(e)
+          }
+        }
       }
     )
 }
