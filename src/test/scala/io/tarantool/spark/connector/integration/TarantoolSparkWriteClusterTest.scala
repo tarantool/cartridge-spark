@@ -4,7 +4,8 @@ import io.tarantool.driver.api.conditions.Conditions
 import io.tarantool.driver.api.tuple.{DefaultTarantoolTupleFactory, TarantoolTuple}
 import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory
 import io.tarantool.spark.connector.toSparkContextFunctions
-import org.apache.spark.sql.{Encoders, Row}
+import org.apache.spark.SparkException
+import org.apache.spark.sql.{Encoders, Row, SaveMode}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -27,24 +28,25 @@ class TarantoolSparkWriteClusterTest
 
   private val orderSchema = Encoders.product[Order].schema
 
-  test("should write a list of objects to the space") {
+  test("should write a dataset of objects to the specified space with different modes") {
 
     val orders = Range(1, 10).map(i => Order(i))
 
-    val df = spark.createDataFrame(
+    var df = spark.createDataFrame(
       spark.sparkContext.parallelize(orders.map(order => order.asRow())),
       orderSchema
     )
 
+    // Insert, the partition is empty at first
     df.write
       .format("org.apache.spark.sql.tarantool")
-      .mode("overwrite")
+      .mode(SaveMode.Append)
       .option("tarantool.space", SPACE_NAME)
       .save()
 
-    val actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
-
+    var actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
     actual.length should be > 0
+
     val sorted = actual.sorted[TarantoolTuple](new Ordering[TarantoolTuple]() {
       override def compare(x: TarantoolTuple, y: TarantoolTuple): Int =
         x.getInteger("id").compareTo(y.getInteger("id"))
@@ -70,19 +72,138 @@ class TarantoolSparkWriteClusterTest
       )
       actualItem.getBoolean("cleared") should equal(expectedItem.getBoolean(6))
     }
+
+    // Replace
+    df = spark.createDataFrame(
+      spark.sparkContext.parallelize(
+        orders
+          .map(order => order.changeOrderType(order.orderType + "222"))
+          .map(order => order.asRow())
+      ),
+      orderSchema
+    )
+
+    df.write
+      .format("org.apache.spark.sql.tarantool")
+      .mode(SaveMode.Overwrite)
+      .option("tarantool.space", SPACE_NAME)
+      .save()
+
+    actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual.length should be > 0
+
+    actual.foreach(item => item.getString("order_type") should endWith("222"))
+
+    // Second insert with the same IDs produces an exception
+    var thrownException: Throwable = the[SparkException] thrownBy {
+      df.write
+        .format("org.apache.spark.sql.tarantool")
+        .mode(SaveMode.Append)
+        .option("tarantool.space", SPACE_NAME)
+        .save()
+    }
+    thrownException.getMessage should include("Duplicate key exists")
+
+    // ErrorIfExists mode checks that partition is empty and provides an exception if it is not
+    thrownException = the[IllegalStateException] thrownBy {
+      df.write
+        .format("org.apache.spark.sql.tarantool")
+        .mode(SaveMode.ErrorIfExists)
+        .option("tarantool.space", SPACE_NAME)
+        .save()
+    }
+    thrownException.getMessage should include("already exists in Tarantool")
+
+    // Clear the data and check that they are written in ErrorIfExists mode
+    container.executeScript("test_teardown.lua").get()
+
+    df = spark.createDataFrame(
+      spark.sparkContext.parallelize(
+        orders
+          .map(order => order.changeOrderType(order.orderType + "333"))
+          .map(order => order.asRow())
+      ),
+      orderSchema
+    )
+
+    df.write
+      .format("org.apache.spark.sql.tarantool")
+      .mode(SaveMode.ErrorIfExists)
+      .option("tarantool.space", SPACE_NAME)
+      .save()
+
+    actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual.length should be > 0
+
+    actual.foreach(item => item.getString("order_type") should endWith("333"))
+
+    // Check that new data are not written in Ignore mode if the partition is not empty
+    df = spark.createDataFrame(
+      spark.sparkContext.parallelize(
+        orders
+          .map(order => order.changeOrderType(order.orderType + "444"))
+          .map(order => order.asRow())
+      ),
+      orderSchema
+    )
+
+    df.write
+      .format("org.apache.spark.sql.tarantool")
+      .mode(SaveMode.Ignore)
+      .option("tarantool.space", SPACE_NAME)
+      .save()
+
+    actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual.length should be > 0
+
+    actual.foreach(item => item.getString("order_type") should endWith("333"))
+
+    // Clear the data and check if they are written in Ignore mode
+    container.executeScript("test_teardown.lua").get()
+
+    df.write
+      .format("org.apache.spark.sql.tarantool")
+      .mode(SaveMode.Ignore)
+      .option("tarantool.space", SPACE_NAME)
+      .save()
+
+    actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual.length should be > 0
+
+    actual.foreach(item => item.getString("order_type") should endWith("444"))
   }
 
+  test("should throw an exception if the space name is not specified") {
+    assertThrows[IllegalArgumentException] {
+      val orders = Range(1, 10).map(i => Order(i))
+
+      val df = spark.createDataFrame(
+        spark.sparkContext.parallelize(orders.map(order => order.asRow())),
+        orderSchema
+      )
+
+      df.write
+        .format("org.apache.spark.sql.tarantool")
+        .mode(SaveMode.Overwrite)
+        .save()
+    }
+  }
 }
 
 case class Order(
   id: Int,
   bucketId: Int,
-  orderType: String,
+  var orderType: String,
   orderValue: BigDecimal,
   orderItems: List[Int],
   options: Map[String, String],
   cleared: Boolean
 ) {
+
+  def changeOrderType(newOrderType: String): Order = {
+    orderType = newOrderType
+    this
+  }
 
   def asRow(): Row =
     Row(id, bucketId, orderType, orderValue, orderItems, options, cleared)

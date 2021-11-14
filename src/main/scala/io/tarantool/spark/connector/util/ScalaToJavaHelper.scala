@@ -1,8 +1,11 @@
 package io.tarantool.spark.connector.util
 
-import java.util.function.{Consumer => JConsumer}
-import java.util.function.{Function => JFunction}
-import java.util.function.{Supplier => JSupplier}
+import java.util.function.{
+  BiFunction => JBiFunction,
+  Consumer => JConsumer,
+  Function => JFunction,
+  Supplier => JSupplier
+}
 import scala.reflect.ClassTag
 
 /**
@@ -28,6 +31,14 @@ object ScalaToJavaHelper {
   def toJavaFunction[T1, R](f: T1 => R): JFunction[T1, R] = new JFunction[T1, R] {
     override def apply(t: T1): R = f.apply(t)
   }
+
+  /**
+    * Converts a Scala {@link Function2} to a Java {@link java.util.function.BiFunction}
+    */
+  def toJavaBiFunction[T1, T2, R](f: (T1, T2) => R): JBiFunction[T1, T2, R] =
+    new JBiFunction[T1, T2, R] {
+      override def apply(t1: T1, t2: T2): R = f.apply(t1, t2)
+    }
 
   /**
     * Converts a Scala {@link Function1} to a Java {@link java.util.function.Function}
