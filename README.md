@@ -90,6 +90,28 @@ Using Scala:
     
     // Space schema from Tarantool will be used for mapping the tuple fields
     val tupleIDs: Array[Int] = df.select("id").rdd.map(row => row.get(0)).collect()
+
+    // 5. Write a Dataset to a Tarantool space
+
+    // Convert objects to Rows
+    val rows = Seq(
+      Book(1, null, "Don Quixote", "Miguel de Cervantes", 1605),
+      Book(2, null, "The Great Gatsby", "F. Scott Fitzgerald", 1925),
+      Book(2, null, "War and Peace", "Leo Tolstoy", 1869)
+    ).map(obj => Row(obj.id, obj.bucketId, obj.bookName, obj.author, obj.year))
+
+    // Extract an object schema using build-in Encoders
+    val orderSchema = Encoders.product[Book].schema
+
+    // Populate the Dataset
+    val ds = spark.createDataFrame(rows, orderSchema)
+
+    // Write to the space. Different modes are supported
+    ds.write
+      .format("org.apache.spark.sql.tarantool")
+      .mode(SaveMode.Overwrite)
+      .option("tarantool.space", "test_space")
+      .save()
 ```
 
 or Java:
@@ -120,6 +142,33 @@ or Java:
         .load();
 
     ds.select("id").rdd().toJavaRDD().map(row -> row.get(0)).collect();
+    
+    // 4. Write a Dataset to a Tarantool space
+        
+    // Create the schema first
+    StructField[] structFields = new StructField[5];
+    structFields[0] = new StructField("id", DataTypes.IntegerType, false, Metadata.empty());
+    structFields[1] = new StructField("bucket_id", DataTypes.IntegerType, false, Metadata.empty());
+    structFields[2] = new StructField("book_name", DataTypes.StringType, false, Metadata.empty());
+    structFields[3] = new StructField("author", DataTypes.StringType, false, Metadata.empty());
+    structFields[4] = new StructField("year", DataTypes.IntegerType, true, Metadata.empty());
+
+    StructType schema = new StructType(structFields);
+
+    // Populate the Dataset
+    List<Row> data = new ArrayList<>(3);
+    data.add(RowFactory.create(1, null, "Don Quixote", "Miguel de Cervantes", 1605));
+    data.add(RowFactory.create(2, null, "The Great Gatsby", "F. Scott Fitzgerald", 1925));
+    data.add(RowFactory.create(3, null, "War and Peace", "Leo Tolstoy", 1869));
+
+    Dataset<Row> ds = sqlContext.createDataFrame(data, schema);
+
+    // Write to the space. Different modes are supported
+    ds.write()
+        .format("org.apache.spark.sql.tarantool")
+        .mode(SaveMode.Overwrite)
+        .option("tarantool.space", "test_space")
+        .save();
 ```
 
 ## Learn more
