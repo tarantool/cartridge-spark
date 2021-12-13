@@ -9,13 +9,10 @@ import io.tarantool.spark.connector.config.{ReadConfig, TarantoolConfig}
 import io.tarantool.spark.connector.connection.TarantoolConnection
 import io.tarantool.spark.connector.partition.TarantoolPartition
 import io.tarantool.spark.connector.rdd.converter.{FunctionBasedTupleConverter, TupleConverter}
-import io.tarantool.spark.connector.util.ScalaToJavaHelper.{
-  toJavaBiFunction,
-  toJavaConsumer,
-  toJavaFunction
-}
+import io.tarantool.spark.connector.util.ScalaToJavaHelper.{toJavaBiFunction, toJavaFunction}
 import io.tarantool.spark.connector.util.TarantoolCursorIterator
 import org.apache.spark.rdd.RDD
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.tarantool.MapFunctions.rowToTuple
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.{Partition, SparkContext, TaskContext}
@@ -48,7 +45,13 @@ class TarantoolRDD[R] private[spark] (
     DefaultMessagePackMapperFactory.getInstance().defaultComplexTypesMapper()
 ) extends RDD[R](sc, Seq.empty) {
 
-  private val globalConfig = TarantoolConfig(sparkContext.getConf)
+  private val globalConfig = TarantoolConfig(sc.getConf)
+  @transient @volatile private lazy val tarantoolConnection = TarantoolConnection(globalConfig)
+  sc.addSparkListener(new SparkListener {
+
+    override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit =
+      tarantoolConnection.close()
+  })
 
   @transient private lazy val tupleFactory = new DefaultTarantoolTupleFactory(
     messagePackMapper
@@ -56,14 +59,8 @@ class TarantoolRDD[R] private[spark] (
 
   override def compute(split: Partition, context: TaskContext): Iterator[R] = {
     val partition = split.asInstanceOf[TarantoolPartition]
-    val connection = TarantoolConnection()
-    val client = connection.client(globalConfig)
+    val client = tarantoolConnection.client()
     val cursorIterator = createCursorIterator(client, partition)
-
-    context.addTaskCompletionListener { context: TaskContext =>
-      connection.close()
-      context
-    }
 
     cursorIterator
   }
@@ -84,8 +81,7 @@ class TarantoolRDD[R] private[spark] (
   def insert(data: DataFrame, overwrite: Boolean): Unit =
     data.foreachPartition((partition: Iterator[Row]) =>
       if (partition.nonEmpty) {
-        val connection = TarantoolConnection()
-        val client = connection.client(globalConfig)
+        val client = tarantoolConnection.client()
 
         var rowCount: Long = 0
         val failedRowsExceptions: ListBuffer[Throwable] = ListBuffer()
@@ -144,8 +140,6 @@ class TarantoolRDD[R] private[spark] (
             .join()
         } catch {
           case throwable: Throwable => savedException = throwable
-        } finally {
-          client.close()
         }
 
         if (Option(savedException).isDefined) {

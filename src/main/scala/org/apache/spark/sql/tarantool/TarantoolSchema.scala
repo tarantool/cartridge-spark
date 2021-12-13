@@ -1,11 +1,10 @@
 package org.apache.spark.sql.tarantool
 
-import io.tarantool.driver.api.metadata.TarantoolMetadataOperations
+import io.tarantool.driver.api.TarantoolResult
+import io.tarantool.driver.api.tuple.TarantoolTuple
 import io.tarantool.driver.exceptions.TarantoolSpaceNotFoundException
-import io.tarantool.spark.connector.config.TarantoolConfig
 import io.tarantool.spark.connector.connection.TarantoolConnection
 import io.tarantool.spark.connector.util.ScalaToJavaHelper.toJavaSupplier
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.{DataType, DataTypes, StructType}
 
 import scala.collection.JavaConverters.mapAsScalaMapConverter
@@ -16,11 +15,15 @@ import scala.language.implicitConversions
   *
   * @author Alexey Kuzin
   */
-case class TarantoolSchema(tarantoolMetadata: TarantoolMetadataOperations) {
+case class TarantoolSchema[T <: TarantoolTuple, R <: TarantoolResult[T]](
+  tarantoolConnection: TarantoolConnection[T, R]
+) {
 
-  def asStructType(spaceName: String): StructType = {
-    val structType = DataTypes.createStructType(
-      tarantoolMetadata
+  def asStructType(spaceName: String): StructType =
+    DataTypes.createStructType(
+      tarantoolConnection
+        .client()
+        .metadata()
         .getSpaceByName(spaceName)
         .orElseThrow(toJavaSupplier(() => new TarantoolSpaceNotFoundException(spaceName)))
         .getSpaceFormatMetadata
@@ -35,24 +38,6 @@ case class TarantoolSchema(tarantoolMetadata: TarantoolMetadataOperations) {
         )
         .toArray
     )
-    structType
-  }
-}
-
-/**
-  * Companion object for {@link TarantoolSchema}
-  *
-  * @author Alexey Kuzin
-  */
-object TarantoolSchema {
-
-  def apply(sparkSession: SparkSession): TarantoolSchema = {
-    val config = TarantoolConfig(sparkSession.sparkContext.getConf)
-    val conn = TarantoolConnection()
-    val client = conn.client(config)
-
-    TarantoolSchema(client.metadata())
-  }
 }
 
 object TarantoolFieldTypes extends Enumeration {

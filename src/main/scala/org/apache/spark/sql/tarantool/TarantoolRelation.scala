@@ -2,8 +2,11 @@ package org.apache.spark.sql.tarantool
 
 import io.tarantool.driver.api.tuple.TarantoolTuple
 import io.tarantool.driver.mappers.{DefaultMessagePackMapperFactory, MessagePackMapper}
+import io.tarantool.spark.connector.config.TarantoolConfig
+import io.tarantool.spark.connector.connection.TarantoolConnection
 import io.tarantool.spark.connector.rdd.TarantoolRDD
 import org.apache.spark.rdd.RDD
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation, TableScan}
 import org.apache.spark.sql.tarantool.MapFunctions.tupleToRow
 import org.apache.spark.sql.types.StructType
@@ -25,19 +28,28 @@ private[spark] case class TarantoolRelation(
     with TableScan
     with InsertableRelation {
 
-  @transient private lazy val sparkSession = sqlContext.sparkSession
+  @transient @volatile private lazy val sparkSession = sqlContext.sparkSession
 
-  @volatile private var spaceSchema: StructType = _
+  private val globalConfig = TarantoolConfig(sparkSession.sparkContext.getConf)
+  @transient @volatile private lazy val tarantoolConnection = TarantoolConnection(globalConfig)
+
+  sparkSession.sparkContext.addSparkListener(new SparkListener {
+
+    override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit =
+      tarantoolConnection.close()
+  })
+
+  @volatile private var spaceSchema: Option[StructType] = None
 
   private def getSpaceSchema: StructType = {
-    if (spaceSchema == null) {
+    if (spaceSchema.isEmpty) {
       synchronized {
-        if (spaceSchema == null) {
-          spaceSchema = TarantoolSchema(sparkSession).asStructType(rdd.space)
+        if (spaceSchema.isEmpty) {
+          spaceSchema = Option(TarantoolSchema(tarantoolConnection).asStructType(rdd.space))
         }
       }
     }
-    spaceSchema
+    spaceSchema.get
   }
 
   def isEmpty: Boolean = rdd.isEmpty()

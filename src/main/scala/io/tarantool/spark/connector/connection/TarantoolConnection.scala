@@ -22,8 +22,21 @@ import scala.reflect.ClassTag
   */
 object TarantoolConnection {
 
-  def apply(): TarantoolConnection[TarantoolTuple, TarantoolResult[TarantoolTuple]] =
-    TarantoolConnection(defaultClient)
+  @transient @volatile private var defaultConnection
+    : Option[TarantoolConnection[TarantoolTuple, TarantoolResult[TarantoolTuple]]] = None
+
+  def apply(
+    tarantoolConfig: TarantoolConfig
+  ): TarantoolConnection[TarantoolTuple, TarantoolResult[TarantoolTuple]] = {
+    if (defaultConnection.isEmpty) {
+      defaultConnection.synchronized {
+        if (defaultConnection.isEmpty) {
+          defaultConnection = Option(new TarantoolConnection(tarantoolConfig, defaultClient))
+        }
+      }
+    }
+    defaultConnection.get
+  }
 
   private def defaultClient(
     clientConfig: TarantoolClientConfig,
@@ -34,18 +47,20 @@ object TarantoolConnection {
     )
 
   def apply[T <: Packable, R <: util.Collection[T]](
+    tarantoolConfig: TarantoolConfig,
     configureClient: (TarantoolClientConfig, Seq[TarantoolServerAddress]) => TarantoolClient[T, R]
   )(
     implicit ctt: ClassTag[T],
     ctr: ClassTag[R]
   ): TarantoolConnection[T, R] =
-    new TarantoolConnection(configureClient)
+    new TarantoolConnection(tarantoolConfig, configureClient)
 }
 
 /**
   * Provides connection to Tarantool server via the Java driver
   */
 class TarantoolConnection[T <: Packable, R <: util.Collection[T]](
+  tarantoolConfig: TarantoolConfig,
   configureClient: (TarantoolClientConfig, Seq[TarantoolServerAddress]) => TarantoolClient[T, R]
 ) extends Serializable
     with Closeable
@@ -54,11 +69,11 @@ class TarantoolConnection[T <: Packable, R <: util.Collection[T]](
   @transient @volatile private var _tarantoolConfig: Option[TarantoolClientConfig] = None
   @transient @volatile private var _tarantoolClient: Option[TarantoolClient[T, R]] = None
 
-  def client(cnf: TarantoolConfig): TarantoolClient[T, R] = {
+  def client(): TarantoolClient[T, R] = {
     if (_tarantoolConfig.isEmpty) {
       _tarantoolConfig.synchronized {
         if (_tarantoolConfig.isEmpty) {
-          _tarantoolConfig = Option(configBuilder(cnf).build())
+          _tarantoolConfig = Option(configBuilder(tarantoolConfig).build())
         }
       }
     }
@@ -66,8 +81,8 @@ class TarantoolConnection[T <: Packable, R <: util.Collection[T]](
     if (_tarantoolClient.isEmpty) {
       _tarantoolClient.synchronized {
         if (_tarantoolClient.isEmpty) {
-          _tarantoolClient = Option(configureClient(_tarantoolConfig.get, cnf.hosts))
-          logInfo("Created TarantoolClient, hosts = " + cnf.hosts)
+          _tarantoolClient = Option(configureClient(_tarantoolConfig.get, tarantoolConfig.hosts))
+          logInfo("Created TarantoolClient, hosts = " + tarantoolConfig.hosts)
         }
       }
     }

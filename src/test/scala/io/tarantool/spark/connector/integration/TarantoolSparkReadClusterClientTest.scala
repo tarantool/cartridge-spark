@@ -38,9 +38,9 @@ class TarantoolSparkReadClusterClientTest
   }
 
   test("Create connection") {
-    val tarantoolConnection = TarantoolConnection()
+    val tarantoolConnection = TarantoolConnection(TarantoolConfig(sc.getConf))
     val tarantoolClient = Option(
-      tarantoolConnection.client(TarantoolConfig(sc.getConf))
+      tarantoolConnection.client()
     )
     tarantoolClient should not be Option.empty
     val spaceHolder = tarantoolClient.get.metadata.getSpaceByName(SPACE_NAME)
@@ -92,5 +92,16 @@ class TarantoolSparkReadClusterClientTest
       sc.tarantoolSpace[Book]("test_space", Conditions.any()).collect()
     rdd.length > 0 should equal(true)
     rdd.find(b => b.year == 1605) should not be None
+  }
+
+  test("Load the whole space into a Dataset with schema auto-determination") {
+    val df = spark.read
+      .format("org.apache.spark.sql.tarantool")
+      .option("tarantool.space", "test_space")
+      .load()
+
+    // Space schema from Tarantool will be used for mapping the tuple fields
+    val tupleIDs: Array[Any] = df.select("id").rdd.map(row => row.get(0)).collect()
+    tupleIDs.length > 0 should equal(true)
   }
 }
