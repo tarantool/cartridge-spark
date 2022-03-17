@@ -33,14 +33,15 @@ ThisBuild / developers := List(
 ThisBuild / scalaVersion := scala211
 
 val commonDependencies = Seq(
-  "io.tarantool"       % "cartridge-driver"                % "0.6.0",
-  "junit"              % "junit"                           % "4.12" % "test",
-  "com.github.sbt"     % "junit-interface"                 % "0.12" % "test",
-  "org.testcontainers" % "testcontainers"                  % "1.16.0" % "test",
-  "io.tarantool"       % "testcontainers-java-tarantool"   % "0.4.5" % "test",
-  "org.scalatest"      %% "scalatest"                      % "3.2.9" % "test",
-  "com.dimafeng"       %% "testcontainers-scala-scalatest" % "0.39.5" % "test",
-  "ch.qos.logback"     % "logback-classic"                 % "1.2.5" % "test"
+  "io.tarantool"       % "cartridge-driver"                % "0.7.0",
+  "junit"              % "junit"                           % "4.12" % Test,
+  "com.github.sbt"     % "junit-interface"                 % "0.12" % Test,
+  "org.testcontainers" % "testcontainers"                  % "1.16.0" % Test,
+  "io.tarantool"       % "testcontainers-java-tarantool"   % "0.4.7" % Test,
+  "org.scalatest"      %% "scalatest"                      % "3.2.9" % Test,
+  "org.scalamock"      %% "scalamock"                      % "5.1.0" % Test,
+  "com.dimafeng"       %% "testcontainers-scala-scalatest" % "0.39.5" % Test,
+  "ch.qos.logback"     % "logback-classic"                 % "1.2.5" % Test
 )
 
 lazy val root = (project in file("."))
@@ -49,7 +50,7 @@ lazy val root = (project in file("."))
     crossScalaVersions := supportedScalaVersions,
     // Dependencies
     libraryDependencies ++=
-      (commonDependencies ++ {
+      (commonDependencies ++ ({
         CrossVersion.partialVersion(scalaVersion.value) match {
           case Some((2, scalaMajor)) if scalaMajor >= 12 =>
             Seq(
@@ -62,20 +63,24 @@ lazy val root = (project in file("."))
               "org.apache.spark" %% "spark-sql"  % "2.2.3" % "provided"
             )
         }
-      }).map(_.exclude("org.slf4j", "slf4j-log4j12")),
+      }).map(
+        _.exclude("org.slf4j", "slf4j-log4j12")
+      )),
     dependencyOverrides ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, scalaMajor)) if scalaMajor >= 12 =>
           Seq(
             "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.7.1",
             "com.fasterxml.jackson.core"   % "jackson-databind"      % "2.6.7.3",
-            "com.fasterxml.jackson.core"   % "jackson-core"          % "2.6.7"
+            "com.fasterxml.jackson.core"   % "jackson-core"          % "2.6.7",
+            "io.netty"                     % "netty-all"             % "4.1.70.Final"
           )
         case _ =>
           Seq(
             "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.5",
             "com.fasterxml.jackson.core"   % "jackson-databind"      % "2.6.5",
-            "com.fasterxml.jackson.core"   % "jackson-core"          % "2.6.5"
+            "com.fasterxml.jackson.core"   % "jackson-core"          % "2.6.5",
+            "io.netty"                     % "netty-all"             % "4.1.17.Final"
           )
       }
     },
