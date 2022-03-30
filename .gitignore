@@ -28,6 +28,10 @@ project
 workspace.xml
 atlassian-ide-plugin.xml
 
+# Metals
+.bloop
+.metals
+
 # gradle
 .gradle
 
@@ -40,3 +44,6 @@ codereview.rc
 
 # Local SBT options
 .sbtopts
+
+# Test Cartridge cluster
+.rocks
