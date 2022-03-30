@@ -8,6 +8,7 @@ import io.tarantool.driver.api.{
   TarantoolServerAddress
 }
 import io.tarantool.driver.auth.SimpleTarantoolCredentials
+import io.tarantool.driver.api.TarantoolClientFactory
 import io.tarantool.driver.core.{ClusterTarantoolTupleClient, ProxyTarantoolTupleClient}
 import io.tarantool.driver.protocol.Packable
 import io.tarantool.spark.connector.Logging
@@ -15,6 +16,7 @@ import io.tarantool.spark.connector.config.{StaticClusterAddressProvider, Tarant
 
 import java.io.{Closeable, Serializable}
 import java.util
+import scala.collection.JavaConverters
 import scala.reflect.ClassTag
 
 /**
@@ -29,9 +31,12 @@ object TarantoolConnection {
     clientConfig: TarantoolClientConfig,
     hosts: Seq[TarantoolServerAddress]
   ): TarantoolClient[TarantoolTuple, TarantoolResult[TarantoolTuple]] =
-    new ProxyTarantoolTupleClient(
-      new ClusterTarantoolTupleClient(clientConfig, new StaticClusterAddressProvider(hosts))
-    )
+    TarantoolClientFactory
+      .createClient()
+      .withAddresses(JavaConverters.seqAsJavaListConverter(hosts).asJava)
+      .withTarantoolClientConfig(clientConfig)
+      .withProxyMethodMapping()
+      .build()
 
   def apply[T <: Packable, R <: util.Collection[T]](
     configureClient: (TarantoolClientConfig, Seq[TarantoolServerAddress]) => TarantoolClient[T, R]
@@ -40,6 +45,11 @@ object TarantoolConnection {
     ctr: ClassTag[R]
   ): TarantoolConnection[T, R] =
     new TarantoolConnection(configureClient)
+
+  @transient private lazy val _tarantoolClientPool: scala.collection.mutable.Map[
+    Seq[TarantoolServerAddress],
+    TarantoolClient[_ <: Packable, _ <: util.Collection[_]]
+  ] = scala.collection.concurrent.TrieMap()
 }
 
 /**
@@ -51,28 +61,22 @@ class TarantoolConnection[T <: Packable, R <: util.Collection[T]](
     with Closeable
     with Logging {
 
-  @transient @volatile private var _tarantoolConfig: Option[TarantoolClientConfig] = None
-  @transient @volatile private var _tarantoolClient: Option[TarantoolClient[T, R]] = None
+  def client(cnf: TarantoolConfig): TarantoolClient[T, R] =
+    return TarantoolConnection._tarantoolClientPool
+      .getOrElseUpdate(
+        cnf.hosts,
+        createClient(configBuilder(cnf).build(), cnf.hosts)
+      )
+      .asInstanceOf[TarantoolClient[T, R]]
 
-  def client(cnf: TarantoolConfig): TarantoolClient[T, R] = {
-    if (_tarantoolConfig.isEmpty) {
-      _tarantoolConfig.synchronized {
-        if (_tarantoolConfig.isEmpty) {
-          _tarantoolConfig = Option(configBuilder(cnf).build())
-        }
-      }
-    }
+  private def createClient(
+    tarantoolConfig: TarantoolClientConfig,
+    hosts: Seq[TarantoolServerAddress]
+  ) = {
+    val tarantoolClient = configureClient(tarantoolConfig, hosts)
+    logInfo("Created TarantoolClient, hosts = " + hosts)
 
-    if (_tarantoolClient.isEmpty) {
-      _tarantoolClient.synchronized {
-        if (_tarantoolClient.isEmpty) {
-          _tarantoolClient = Option(configureClient(_tarantoolConfig.get, cnf.hosts))
-          logInfo("Created TarantoolClient, hosts = " + cnf.hosts)
-        }
-      }
-    }
-
-    _tarantoolClient.get
+    tarantoolClient
   }
 
   private def configBuilder(cnf: TarantoolConfig) = {
@@ -101,14 +105,15 @@ class TarantoolConnection[T <: Packable, R <: util.Collection[T]](
   }
 
   override def close(): Unit =
-    if (_tarantoolClient.isDefined) {
-      _tarantoolClient.synchronized {
-        if (_tarantoolClient.isDefined) {
-          logInfo("Closing TarantoolClient")
-          _tarantoolClient.get.close()
-          _tarantoolClient = None
-          _tarantoolConfig = None
+    TarantoolConnection._tarantoolClientPool.foreach {
+      case (hosts, client) =>
+        logInfo("Closing TarantoolClient for " + hosts)
+        try {
+          if (client != null) {
+            client.close()
+          }
+        } finally {
+          TarantoolConnection._tarantoolClientPool.remove(hosts)
         }
-      }
     }
 }
