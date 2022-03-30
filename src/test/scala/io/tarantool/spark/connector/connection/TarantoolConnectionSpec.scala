@@ -14,6 +14,11 @@ class TarantoolConnectionSpec extends AnyFlatSpec with Matchers with SharedSpark
     val conf: TarantoolConfig = TarantoolConfig(sc.getConf)
 
     conn1.client(conf) should equal(conn1.client(conf))
-    (conn1.client(conf) should not).equal(conn2.client(conf))
+    conn1.client(conf) should equal(conn2.client(conf))
+    val client = conn1.client(conf)
+
+    conn1.close()
+    conn2.client(conf) should (not(equal(client)))
+    conn2.close()
   }
 }

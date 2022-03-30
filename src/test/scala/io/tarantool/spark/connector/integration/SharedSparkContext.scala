@@ -64,10 +64,13 @@ trait SharedSparkContext extends BeforeAndAfterAll { self: Suite =>
 
   override def afterAll(): Unit = {
     super.afterAll()
-    val scRef = sparkSession.get()
-    if (sparkSession.compareAndSet(scRef, null)) {
-      scRef.stop()
+    try {
+      val scRef = sparkSession.get()
+      if (sparkSession.compareAndSet(scRef, null)) {
+        scRef.stop()
+      }
+    } finally {
+      container.stop()
     }
-    container.stop()
   }
 }

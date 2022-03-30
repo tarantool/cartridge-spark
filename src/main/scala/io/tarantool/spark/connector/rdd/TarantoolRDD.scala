@@ -57,15 +57,14 @@ class TarantoolRDD[R] private[spark] (
   override def compute(split: Partition, context: TaskContext): Iterator[R] = {
     val partition = split.asInstanceOf[TarantoolPartition]
     val connection = TarantoolConnection()
-    val client = connection.client(globalConfig)
-    val cursorIterator = createCursorIterator(client, partition)
-
-    context.addTaskCompletionListener { context: TaskContext =>
-      connection.close()
-      context
+    context.addTaskCompletionListener {
+      new Function1[TaskContext, Unit] {
+        def apply(context: TaskContext) { connection.close() }
+      }
     }
 
-    cursorIterator
+    val client = connection.client(globalConfig)
+    createCursorIterator(client, partition)
   }
 
   private def createCursorIterator(
@@ -81,10 +80,13 @@ class TarantoolRDD[R] private[spark] (
   override protected def getPartitions: Array[Partition] =
     readConfig.partitioner.partitions(globalConfig.hosts, conditions).asInstanceOf[Array[Partition]]
 
-  def insert(data: DataFrame, overwrite: Boolean): Unit =
+  def insert(
+    connection: TarantoolConnection[TarantoolTuple, TarantoolResult[TarantoolTuple]],
+    data: DataFrame,
+    overwrite: Boolean
+  ): Unit =
     data.foreachPartition((partition: Iterator[Row]) =>
       if (partition.nonEmpty) {
-        val connection = TarantoolConnection()
         val client = connection.client(globalConfig)
 
         var rowCount: Long = 0
@@ -127,14 +129,12 @@ class TarantoolRDD[R] private[spark] (
                       exception.printStackTrace(pw)
                     }
                     savedException = TarantoolSparkException("Dataset write failed: " + sw.toString)
-                    logError(savedException.getMessage)
                   } finally {
                     pw.close()
                   }
                 } else {
                   if (Option(exception).isDefined) {
                     savedException = exception
-                    logError("Dataset write failed: ", savedException)
                   } else {
                     logInfo(s"Dataset write success, $rowCount rows written")
                   }
@@ -144,8 +144,6 @@ class TarantoolRDD[R] private[spark] (
             .join()
         } catch {
           case throwable: Throwable => savedException = throwable
-        } finally {
-          client.close()
         }
 
         if (Option(savedException).isDefined) {
