@@ -80,7 +80,15 @@ class TarantoolRDD[R] private[spark] (
   override protected def getPartitions: Array[Partition] =
     readConfig.partitioner.partitions(globalConfig.hosts, conditions).asInstanceOf[Array[Partition]]
 
-  def insert(
+  def truncate(
+    connection: TarantoolConnection[TarantoolTuple, TarantoolResult[TarantoolTuple]]
+  ): Unit = {
+    val client = connection.client(globalConfig)
+
+    client.space(space).truncate()
+  }
+
+  def write(
     connection: TarantoolConnection[TarantoolTuple, TarantoolResult[TarantoolTuple]],
     data: DataFrame,
     overwrite: Boolean
