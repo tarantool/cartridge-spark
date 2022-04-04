@@ -47,8 +47,11 @@ class DefaultSource
     })
 
     mode match {
-      case SaveMode.Append    => relation.rdd.insert(connection, data, overwrite = false)
-      case SaveMode.Overwrite => relation.rdd.insert(connection, data, overwrite = true)
+      case SaveMode.Append => relation.rdd.write(connection, data, overwrite = true)
+      case SaveMode.Overwrite => {
+        relation.rdd.truncate(connection)
+        relation.rdd.write(connection, data, overwrite = false)
+      }
       case SaveMode.ErrorIfExists =>
         if (relation.nonEmpty) {
           throw new IllegalStateException(
@@ -56,10 +59,10 @@ class DefaultSource
               "already exists in Tarantool and contains data."
           )
         }
-        relation.rdd.insert(connection, data, overwrite = false)
+        relation.rdd.write(connection, data, overwrite = false)
       case SaveMode.Ignore =>
         if (relation.isEmpty) {
-          relation.rdd.insert(connection, data, overwrite = false)
+          relation.rdd.write(connection, data, overwrite = false)
         }
     }
 

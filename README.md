@@ -171,6 +171,18 @@ or Java:
         .save();
 ```
 
+## Supported DataSet write modes
+
+Consult with the following table about what will happen when a DataSet is written with different modes.
+In all modes it is supposed that all the spaces used in an operation exist. An error will be produced otherwise. 
+
+| Mode          | How it works                                                                                       |
+|---------------|----------------------------------------------------------------------------------------------------|
+| Append        | If a record with the given primary key exists, it will be replaced, and inserted otherwise.        |
+| Overwrite     | The space will be truncated before writing the DataSet, and then the records will be inserted.     |
+| ErrorIfExists | If the space is not empty, an error will be produced; otherwise, the records will be inserted.     |
+| Ignore        | If the space is not empty, no records will be inserted an no errors will be produced.              |
+
 ## Learn more
 
 - [Tarantool](https://www.tarantool.io/)

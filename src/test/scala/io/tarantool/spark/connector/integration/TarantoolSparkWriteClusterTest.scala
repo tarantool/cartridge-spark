@@ -46,6 +46,7 @@ class TarantoolSparkWriteClusterTest
 
     var actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
     actual.length should be > 0
+    val current = actual.length
 
     val sorted = actual.sorted[TarantoolTuple](new Ordering[TarantoolTuple]() {
       override def compare(x: TarantoolTuple, y: TarantoolTuple): Int =
@@ -90,22 +91,33 @@ class TarantoolSparkWriteClusterTest
       .save()
 
     actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
-    actual.length should be > 0
+    actual.length should equal(current)
 
     actual.foreach(item => item.getString("order_type") should endWith("222"))
 
-    // Second insert with the same IDs produces an exception
-    var thrownException: Throwable = the[SparkException] thrownBy {
-      df.write
-        .format("org.apache.spark.sql.tarantool")
-        .mode(SaveMode.Append)
-        .option("tarantool.space", SPACE_NAME)
-        .save()
-    }
-    thrownException.getMessage should include("Duplicate key exists")
+    df = spark.createDataFrame(
+      spark.sparkContext.parallelize(
+        orders
+          .map(order => order.changeOrderType(order.orderType + "333"))
+          .map(order => order.asRow())
+      ),
+      orderSchema
+    )
+
+    // Second insert with the same IDs does not result in an exception
+    df.write
+      .format("org.apache.spark.sql.tarantool")
+      .mode(SaveMode.Append)
+      .option("tarantool.space", SPACE_NAME)
+      .save()
+
+    actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual.length should equal(current)
+
+    actual.foreach(item => item.getString("order_type") should endWith("333"))
 
     // ErrorIfExists mode checks that partition is empty and provides an exception if it is not
-    thrownException = the[IllegalStateException] thrownBy {
+    val thrownException = the[IllegalStateException] thrownBy {
       df.write
         .format("org.apache.spark.sql.tarantool")
         .mode(SaveMode.ErrorIfExists)
@@ -120,7 +132,7 @@ class TarantoolSparkWriteClusterTest
     df = spark.createDataFrame(
       spark.sparkContext.parallelize(
         orders
-          .map(order => order.changeOrderType(order.orderType + "333"))
+          .map(order => order.changeOrderType(order.orderType + "444"))
           .map(order => order.asRow())
       ),
       orderSchema
@@ -133,15 +145,15 @@ class TarantoolSparkWriteClusterTest
       .save()
 
     actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
-    actual.length should be > 0
+    actual.length should equal(current)
 
-    actual.foreach(item => item.getString("order_type") should endWith("333"))
+    actual.foreach(item => item.getString("order_type") should endWith("444"))
 
     // Check that new data are not written in Ignore mode if the partition is not empty
     df = spark.createDataFrame(
       spark.sparkContext.parallelize(
         orders
-          .map(order => order.changeOrderType(order.orderType + "444"))
+          .map(order => order.changeOrderType(order.orderType + "555"))
           .map(order => order.asRow())
       ),
       orderSchema
@@ -154,9 +166,9 @@ class TarantoolSparkWriteClusterTest
       .save()
 
     actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
-    actual.length should be > 0
+    actual.length should equal(current)
 
-    actual.foreach(item => item.getString("order_type") should endWith("333"))
+    actual.foreach(item => item.getString("order_type") should endWith("444"))
 
     // Clear the data and check if they are written in Ignore mode
     container.executeScript("test_teardown.lua").get()
@@ -168,9 +180,9 @@ class TarantoolSparkWriteClusterTest
       .save()
 
     actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
-    actual.length should be > 0
+    actual.length should equal(current)
 
-    actual.foreach(item => item.getString("order_type") should endWith("444"))
+    actual.foreach(item => item.getString("order_type") should endWith("555"))
   }
 
   test("should throw an exception if the space name is not specified") {
