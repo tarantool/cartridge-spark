@@ -17,7 +17,7 @@ You can link against this library for Maven in your program at the following coo
 <dependency>
   <groupId>io.tarantool</groupId>
   <artifactId>spark-tarantool-connector</artifactId>
-  <version>0.1.1</version>
+  <version>0.3.0</version>
 </dependency>
 ```
 
