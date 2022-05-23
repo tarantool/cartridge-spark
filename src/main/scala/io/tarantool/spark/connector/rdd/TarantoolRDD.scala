@@ -50,10 +50,6 @@ class TarantoolRDD[R] private[spark] (
 
   private val globalConfig = TarantoolConfig(sparkContext.getConf)
 
-  @transient private lazy val tupleFactory = new DefaultTarantoolTupleFactory(
-    messagePackMapper
-  )
-
   override def compute(split: Partition, context: TaskContext): Iterator[R] = {
     val partition = split.asInstanceOf[TarantoolPartition]
     val connection = TarantoolConnection()
@@ -96,6 +92,8 @@ class TarantoolRDD[R] private[spark] (
     data.foreachPartition((partition: Iterator[Row]) =>
       if (partition.nonEmpty) {
         val client = connection.client(globalConfig)
+        val spaceMetadata = client.metadata().getSpaceByName(space).get()
+        val tupleFactory = new DefaultTarantoolTupleFactory(messagePackMapper, spaceMetadata)
 
         var rowCount: Long = 0
         val failedRowsExceptions: ListBuffer[Throwable] = ListBuffer()

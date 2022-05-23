@@ -2,7 +2,10 @@ package io.tarantool.spark.connector.integration
 
 import io.tarantool.driver.api.conditions.Conditions
 import io.tarantool.driver.api.tuple.{DefaultTarantoolTupleFactory, TarantoolTuple}
+import io.tarantool.driver.exceptions.TarantoolException
 import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory
+import io.tarantool.spark.connector.connection.TarantoolConnection
+import io.tarantool.spark.connector.config.TarantoolConfig
 import io.tarantool.spark.connector.toSparkContextFunctions
 import org.apache.spark.SparkException
 import org.apache.spark.sql.{Encoders, Row, SaveMode}
@@ -183,6 +186,61 @@ class TarantoolSparkWriteClusterTest
     actual.length should equal(current)
 
     actual.foreach(item => item.getString("order_type") should endWith("555"))
+  }
+
+  test("should write a Dataset to the space with field names mapping") {
+    val space = "test_space"
+
+    var ds = spark.sql(
+      """
+        |select 1 as id, null as bucketId, 'Don Quixote' as bookName, 'Miguel de Cervantes' as author, 1605 as year union all
+        |select 2, null, 'The Great Gatsby', 'F. Scott Fitzgerald', 1925 union all
+        |select 2, null, 'War and Peace', 'Leo Tolstoy', 1869
+        |""".stripMargin
+    )
+
+    val ex = intercept[SparkException] {
+      ds.write
+        .format("org.apache.spark.sql.tarantool")
+        .mode(SaveMode.Append)
+        .option("tarantool.space", space)
+        .save()
+    }
+    ex.getMessage should include(
+      "Tuple field 3 (unique_key) type does not match one required by operation: expected string, got nil"
+    )
+
+    ds = spark.sql(
+      """
+        |select 1 as id, null as bucketId, 'Miguel de Cervantes' as author, 1605 as year, 'Don Quixote' as bookName, 'lolkek' as uniqueKey union all
+        |select 2, null, 'F. Scott Fitzgerald', 1925, 'The Great Gatsby', 'lolkek1' union all
+        |select 3, null, 'Leo Tolstoy', 1869, 'War and Peace', 'lolkek2'
+        |""".stripMargin
+    )
+
+    ds.write
+      .format("org.apache.spark.sql.tarantool")
+      .mode(SaveMode.Append)
+      .option("tarantool.space", space)
+      .save()
+
+    val actual = spark.sparkContext.tarantoolSpace(space, Conditions.any()).collect()
+    actual.length should equal(3)
+
+    actual(0).getString("author") should equal("Miguel de Cervantes")
+    actual(0).getString("book_name") should equal("Don Quixote")
+    actual(0).getInteger("year") should equal(1605)
+    actual(0).getString("unique_key") should equal("lolkek")
+
+    actual(1).getString("author") should equal("F. Scott Fitzgerald")
+    actual(1).getString("book_name") should equal("The Great Gatsby")
+    actual(1).getInteger("year") should equal(1925)
+    actual(1).getString("unique_key") should equal("lolkek1")
+
+    actual(2).getString("author") should equal("Leo Tolstoy")
+    actual(2).getString("book_name") should equal("War and Peace")
+    actual(2).getInteger("year") should equal(1869)
+    actual(2).getString("unique_key") should equal("lolkek2")
   }
 
   test("should throw an exception if the space name is not specified") {
