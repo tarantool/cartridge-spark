@@ -38,7 +38,7 @@ trait SharedSparkContext extends BeforeAndAfterAll { self: Suite =>
     sessionBuilder: SparkSession.Builder,
     conf: SparkConf
   ): SparkSession.Builder = {
-    sessionBuilder.config(conf)
+    sessionBuilder.config(conf).enableHiveSupport()
     sessionBuilder
   }
 
