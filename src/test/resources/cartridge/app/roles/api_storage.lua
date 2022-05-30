@@ -70,6 +70,32 @@ local function init_space()
         unique = false,
         if_not_exists = true,
     })
+
+    local reg_numbers = box.schema.space.create(
+        'reg_numbers',
+        {
+            format = {
+                {name = 'bucket_id'          , type = 'unsigned'    , is_nullable = false},
+                {name = 'idreg'              , type = 'decimal'     , is_nullable = false}, 
+                {name = 'regnum'             , type = 'decimal'     , is_nullable = true},
+            },
+            if_not_exists = true,
+        }
+    )
+
+    reg_numbers:create_index('index_id', {
+        unique = true,
+        type = 'tree',
+        parts = {{2, 'decimal'}},
+        if_not_exists = true,
+    })
+
+    reg_numbers:create_index('bucket_id', {
+        unique = false,
+        type = 'tree',
+        parts = {{1, 'unsigned'}},
+        if_not_exists = true,
+    })
 end
 
 local function init(opts)

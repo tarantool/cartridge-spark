@@ -33,15 +33,16 @@ ThisBuild / developers := List(
 ThisBuild / scalaVersion := scala211
 
 val commonDependencies = Seq(
-  "io.tarantool"       % "cartridge-driver"                % "0.7.2",
+  "io.tarantool"       % "cartridge-driver"                % "0.8.0",
   "junit"              % "junit"                           % "4.12" % Test,
   "com.github.sbt"     % "junit-interface"                 % "0.12" % Test,
-  "org.testcontainers" % "testcontainers"                  % "1.16.0" % Test,
-  "io.tarantool"       % "testcontainers-java-tarantool"   % "0.4.7" % Test,
+  "org.testcontainers" % "testcontainers"                  % "1.17.0" % Test,
+  "io.tarantool"       % "testcontainers-java-tarantool"   % "0.5.0" % Test,
   "org.scalatest"      %% "scalatest"                      % "3.2.9" % Test,
   "org.scalamock"      %% "scalamock"                      % "5.1.0" % Test,
   "com.dimafeng"       %% "testcontainers-scala-scalatest" % "0.39.5" % Test,
-  "ch.qos.logback"     % "logback-classic"                 % "1.2.5" % Test
+  "ch.qos.logback"     % "logback-classic"                 % "1.2.5" % Test,
+  "org.apache.derby"   % "derby"                           % "10.11.1.1" % Test
 )
 
 lazy val root = (project in file("."))
@@ -55,12 +56,14 @@ lazy val root = (project in file("."))
           case Some((2, scalaMajor)) if scalaMajor >= 12 =>
             Seq(
               "org.apache.spark" %% "spark-core" % "2.4.8" % "provided",
-              "org.apache.spark" %% "spark-sql"  % "2.4.8" % "provided"
+              "org.apache.spark" %% "spark-sql"  % "2.4.8" % "provided",
+              "org.apache.spark" %% "spark-hive" % "2.4.8" % "provided"
             )
           case _ =>
             Seq(
               "org.apache.spark" %% "spark-core" % "2.2.3" % "provided",
-              "org.apache.spark" %% "spark-sql"  % "2.2.3" % "provided"
+              "org.apache.spark" %% "spark-sql"  % "2.2.3" % "provided",
+              "org.apache.spark" %% "spark-hive" % "2.2.3" % "provided"
             )
         }
       }).map(
@@ -100,7 +103,10 @@ lazy val root = (project in file("."))
       "UTF-8"
     ),
     // Test frameworks options
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-v"),
+    testOptions ++= Seq(
+      Tests.Argument(TestFrameworks.JUnit, "-v"),
+      Tests.Setup(() => System.setSecurityManager(null)) // SPARK-22918
+    ),
     // Publishing settings
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
