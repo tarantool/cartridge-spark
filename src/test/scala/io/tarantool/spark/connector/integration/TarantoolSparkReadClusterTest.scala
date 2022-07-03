@@ -13,12 +13,14 @@ import org.scalatest.matchers.should.Matchers
 
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
-class TarantoolSparkReadClusterClientTest
+/**
+  * @author Alexey Kuzin
+  */
+@org.scalatest.DoNotDiscover
+class TarantoolSparkReadClusterTest
     extends AnyFunSuite
     with Matchers
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach
-    with SharedSparkContext {
+    with TarantoolSparkClusterTestSuite {
 
   //space format:
   // s = box.schema.space.create('_spark_test_space')
@@ -29,18 +31,18 @@ class TarantoolSparkReadClusterClientTest
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    container.executeScript("test_setup.lua").get
+    SharedSparkContext.container.executeScript("test_setup.lua").get
   }
 
   override protected def afterEach(): Unit = {
-    container.executeScript("test_teardown.lua").get
+    SharedSparkContext.container.executeScript("test_teardown.lua").get
     super.afterEach()
   }
 
   test("Create connection") {
     val tarantoolConnection = TarantoolConnection()
     val tarantoolClient = Option(
-      tarantoolConnection.client(TarantoolConfig(sc.getConf))
+      tarantoolConnection.client(TarantoolConfig(SharedSparkContext.sc.getConf))
     )
     tarantoolClient should not be Option.empty
     val spaceHolder = tarantoolClient.get.metadata.getSpaceByName(SPACE_NAME)
@@ -50,12 +52,12 @@ class TarantoolSparkReadClusterClientTest
 
   test("Load the whole space") {
     val rdd: Array[TarantoolTuple] =
-      sc.tarantoolSpace("test_space", Conditions.any()).collect()
+      SharedSparkContext.sc.tarantoolSpace("test_space", Conditions.any()).collect()
     rdd.length > 0 should equal(true)
   }
 
   test("Load the whole space into a DataFrame") {
-    val df = spark.read
+    val df = SharedSparkContext.spark.read
       .format("org.apache.spark.sql.tarantool")
       .option("tarantool.space", "test_space")
       .load()
@@ -71,7 +73,8 @@ class TarantoolSparkReadClusterClientTest
       .indexGreaterThan("id", List(1).asJava)
       .withLimit(2)
       .startAfter(startTuple)
-    val rdd: Array[TarantoolTuple] = sc.tarantoolSpace("test_space", cond).collect()
+    val rdd: Array[TarantoolTuple] =
+      SharedSparkContext.sc.tarantoolSpace("test_space", cond).collect()
 
     rdd.length should equal(2)
     rdd.apply(0).getInteger("id") should equal(2)
@@ -89,13 +92,13 @@ class TarantoolSparkReadClusterClientTest
         book
       }
     val rdd: Array[Book] =
-      sc.tarantoolSpace[Book]("test_space", Conditions.any()).collect()
+      SharedSparkContext.sc.tarantoolSpace[Book]("test_space", Conditions.any()).collect()
     rdd.length > 0 should equal(true)
     rdd.find(b => b.year == 1605) should not be None
   }
 
   test("Load the whole space into a Dataset with schema auto-determination") {
-    val df = spark.read
+    val df = SharedSparkContext.spark.read
       .format("org.apache.spark.sql.tarantool")
       .option("tarantool.space", "test_space")
       .load()

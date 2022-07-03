@@ -47,3 +47,8 @@ codereview.rc
 
 # Test Cartridge cluster
 .rocks
+
+# Hive
+metastore_db/
+derby.log
+spark-warehouse/
