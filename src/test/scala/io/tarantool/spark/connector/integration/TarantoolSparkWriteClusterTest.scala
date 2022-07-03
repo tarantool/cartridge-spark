@@ -11,7 +11,7 @@ import org.apache.spark.SparkException
 import org.apache.spark.sql.{Encoders, Row, SaveMode}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.Tag
 
 import java.util
 import java.util.concurrent.ThreadLocalRandom
@@ -20,12 +20,11 @@ import scala.collection.JavaConverters.{mapAsJavaMapConverter, seqAsJavaListConv
 /**
   * @author Alexey Kuzin
   */
+@org.scalatest.DoNotDiscover
 class TarantoolSparkWriteClusterTest
     extends AnyFunSuite
     with Matchers
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach
-    with SharedSparkContext {
+    with TarantoolSparkClusterTestSuite {
 
   private val SPACE_NAME: String = "orders"
 
@@ -35,8 +34,8 @@ class TarantoolSparkWriteClusterTest
 
     val orders = Range(1, 10).map(i => Order(i))
 
-    var df = spark.createDataFrame(
-      spark.sparkContext.parallelize(orders.map(order => order.asRow())),
+    var df = SharedSparkContext.spark.createDataFrame(
+      SharedSparkContext.spark.sparkContext.parallelize(orders.map(order => order.asRow())),
       orderSchema
     )
 
@@ -47,7 +46,8 @@ class TarantoolSparkWriteClusterTest
       .option("tarantool.space", SPACE_NAME)
       .save()
 
-    var actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    var actual =
+      SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
     actual.length should be > 0
     val current = actual.length
 
@@ -78,8 +78,8 @@ class TarantoolSparkWriteClusterTest
     }
 
     // Replace
-    df = spark.createDataFrame(
-      spark.sparkContext.parallelize(
+    df = SharedSparkContext.spark.createDataFrame(
+      SharedSparkContext.spark.sparkContext.parallelize(
         orders
           .map(order => order.changeOrderType(order.orderType + "222"))
           .map(order => order.asRow())
@@ -93,13 +93,14 @@ class TarantoolSparkWriteClusterTest
       .option("tarantool.space", SPACE_NAME)
       .save()
 
-    actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual =
+      SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
     actual.length should equal(current)
 
     actual.foreach(item => item.getString("order_type") should endWith("222"))
 
-    df = spark.createDataFrame(
-      spark.sparkContext.parallelize(
+    df = SharedSparkContext.spark.createDataFrame(
+      SharedSparkContext.spark.sparkContext.parallelize(
         orders
           .map(order => order.changeOrderType(order.orderType + "333"))
           .map(order => order.asRow())
@@ -114,7 +115,8 @@ class TarantoolSparkWriteClusterTest
       .option("tarantool.space", SPACE_NAME)
       .save()
 
-    actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual =
+      SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
     actual.length should equal(current)
 
     actual.foreach(item => item.getString("order_type") should endWith("333"))
@@ -130,10 +132,10 @@ class TarantoolSparkWriteClusterTest
     thrownException.getMessage should include("already exists in Tarantool")
 
     // Clear the data and check that they are written in ErrorIfExists mode
-    container.executeScript("test_teardown.lua").get()
+    SharedSparkContext.container.executeScript("test_teardown.lua").get()
 
-    df = spark.createDataFrame(
-      spark.sparkContext.parallelize(
+    df = SharedSparkContext.spark.createDataFrame(
+      SharedSparkContext.spark.sparkContext.parallelize(
         orders
           .map(order => order.changeOrderType(order.orderType + "444"))
           .map(order => order.asRow())
@@ -147,14 +149,15 @@ class TarantoolSparkWriteClusterTest
       .option("tarantool.space", SPACE_NAME)
       .save()
 
-    actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual =
+      SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
     actual.length should equal(current)
 
     actual.foreach(item => item.getString("order_type") should endWith("444"))
 
     // Check that new data are not written in Ignore mode if the partition is not empty
-    df = spark.createDataFrame(
-      spark.sparkContext.parallelize(
+    df = SharedSparkContext.spark.createDataFrame(
+      SharedSparkContext.spark.sparkContext.parallelize(
         orders
           .map(order => order.changeOrderType(order.orderType + "555"))
           .map(order => order.asRow())
@@ -168,13 +171,14 @@ class TarantoolSparkWriteClusterTest
       .option("tarantool.space", SPACE_NAME)
       .save()
 
-    actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual =
+      SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
     actual.length should equal(current)
 
     actual.foreach(item => item.getString("order_type") should endWith("444"))
 
     // Clear the data and check if they are written in Ignore mode
-    container.executeScript("test_teardown.lua").get()
+    SharedSparkContext.container.executeScript("test_teardown.lua").get()
 
     df.write
       .format("org.apache.spark.sql.tarantool")
@@ -182,7 +186,8 @@ class TarantoolSparkWriteClusterTest
       .option("tarantool.space", SPACE_NAME)
       .save()
 
-    actual = spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual =
+      SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
     actual.length should equal(current)
 
     actual.foreach(item => item.getString("order_type") should endWith("555"))
@@ -191,7 +196,7 @@ class TarantoolSparkWriteClusterTest
   test("should write a Dataset to the space with field names mapping") {
     val space = "test_space"
 
-    var ds = spark.sql(
+    var ds = SharedSparkContext.spark.sql(
       """
         |select 1 as id, null as bucketId, 'Don Quixote' as bookName, 'Miguel de Cervantes' as author, 1605 as year union all
         |select 2, null, 'The Great Gatsby', 'F. Scott Fitzgerald', 1925 union all
@@ -210,7 +215,7 @@ class TarantoolSparkWriteClusterTest
       "Tuple field 3 (unique_key) type does not match one required by operation: expected string, got nil"
     )
 
-    ds = spark.sql(
+    ds = SharedSparkContext.spark.sql(
       """
         |select 1 as id, null as bucketId, 'Miguel de Cervantes' as author, 1605 as year, 'Don Quixote' as bookName, 'lolkek' as uniqueKey union all
         |select 2, null, 'F. Scott Fitzgerald', 1925, 'The Great Gatsby', 'lolkek1' union all
@@ -224,7 +229,8 @@ class TarantoolSparkWriteClusterTest
       .option("tarantool.space", space)
       .save()
 
-    val actual = spark.sparkContext.tarantoolSpace(space, Conditions.any()).collect()
+    val actual =
+      SharedSparkContext.spark.sparkContext.tarantoolSpace(space, Conditions.any()).collect()
     actual.length should equal(3)
 
     actual(0).getString("author") should equal("Miguel de Cervantes")
@@ -247,8 +253,8 @@ class TarantoolSparkWriteClusterTest
     assertThrows[IllegalArgumentException] {
       val orders = Range(1, 10).map(i => Order(i))
 
-      val df = spark.createDataFrame(
-        spark.sparkContext.parallelize(orders.map(order => order.asRow())),
+      val df = SharedSparkContext.spark.createDataFrame(
+        SharedSparkContext.spark.sparkContext.parallelize(orders.map(order => order.asRow())),
         orderSchema
       )
 
@@ -259,26 +265,26 @@ class TarantoolSparkWriteClusterTest
     }
   }
 
-  test("should write a Dataset to the space with decimal values") {
+  test("should write a Dataset to the space with decimal values", DecimalTestTag) {
     val space = "reg_numbers"
 
-    spark.sql("create database if not exists dl_raw")
-    spark.sql("drop table if exists DL_RAW.reg_numbers")
+    SharedSparkContext.spark.sql("create database if not exists dl_raw")
+    SharedSparkContext.spark.sql("drop table if exists DL_RAW.reg_numbers")
 
-    spark.sql("""
-                |create table if not exists DL_RAW.reg_numbers (
-                |     bucket_id             integer 
-                |    ,idreg                 decimal(38,18) 
-                |    ,regnum                decimal(38) 
-                |  ) stored as orc""".stripMargin)
-    spark.sql("""
-                |insert into dl_raw.reg_numbers values 
-                |(null, 1085529600000.13452690000413, 404503014700028), 
-                |(null, 1086629600000.13452690000413, 404503015800028), 
-                |(null, 1087430400000.13452690000413, 304503016900085) 
-                |""".stripMargin)
+    SharedSparkContext.spark.sql("""
+                                   |create table if not exists DL_RAW.reg_numbers (
+                                   |     bucket_id             integer 
+                                   |    ,idreg                 decimal(38,18) 
+                                   |    ,regnum                decimal(38) 
+                                   |  ) stored as orc""".stripMargin)
+    SharedSparkContext.spark.sql("""
+                                   |insert into dl_raw.reg_numbers values 
+                                   |(null, 1085529600000.13452690000413, 404503014700028), 
+                                   |(null, 1086629600000.13452690000413, 404503015800028), 
+                                   |(null, 1087430400000.13452690000413, 304503016900085) 
+                                   |""".stripMargin)
 
-    val ds = spark.table("dl_raw.reg_numbers")
+    val ds = SharedSparkContext.spark.table("dl_raw.reg_numbers")
 
     ds.show(false)
     ds.printSchema()
@@ -289,7 +295,8 @@ class TarantoolSparkWriteClusterTest
       .mode(SaveMode.Overwrite)
       .save()
 
-    val actual = spark.sparkContext.tarantoolSpace(space, Conditions.any()).collect()
+    val actual =
+      SharedSparkContext.spark.sparkContext.tarantoolSpace(space, Conditions.any()).collect()
     actual.length should equal(3)
 
     actual(0).getDecimal("idreg") should equal(
@@ -363,3 +370,5 @@ object Order {
       cleared = true
     )
 }
+
+object DecimalTestTag extends Tag("io.tarantool.spark.integration.DecimalTest")

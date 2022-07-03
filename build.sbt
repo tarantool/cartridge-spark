@@ -36,7 +36,7 @@ val commonDependencies = Seq(
   "io.tarantool"       % "cartridge-driver"                % "0.8.0",
   "junit"              % "junit"                           % "4.12" % Test,
   "com.github.sbt"     % "junit-interface"                 % "0.12" % Test,
-  "org.testcontainers" % "testcontainers"                  % "1.17.0" % Test,
+  "org.testcontainers" % "testcontainers"                  % "1.17.3" % Test,
   "io.tarantool"       % "testcontainers-java-tarantool"   % "0.5.0" % Test,
   "org.scalatest"      %% "scalatest"                      % "3.2.9" % Test,
   "org.scalamock"      %% "scalamock"                      % "5.1.0" % Test,
