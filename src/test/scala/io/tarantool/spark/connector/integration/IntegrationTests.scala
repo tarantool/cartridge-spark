@@ -7,7 +7,8 @@ class IntegrationTests
     extends Suites(
       new TarantoolConnectionSpec,
       new TarantoolSparkReadClusterTest,
-      new TarantoolSparkWriteClusterTest
+      new TarantoolSparkWriteClusterTest,
+      new TarantoolSparkWriteClusterWithHiveTest
     )
     with BeforeAndAfterAll {
   protected lazy val sqlImplicits: SQLImplicits = SharedSparkContext.spark.implicits
