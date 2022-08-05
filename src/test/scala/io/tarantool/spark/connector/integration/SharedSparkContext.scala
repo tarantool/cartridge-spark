@@ -1,19 +1,18 @@
 package io.tarantool.spark.connector.integration
 
-import io.tarantool.spark.connector.containers.TarantoolCartridgeContainer
 import io.tarantool.spark.connector.Logging
-import org.apache.spark.sql.{SQLImplicits, SparkSession}
+import io.tarantool.spark.connector.containers.TarantoolCartridgeContainer
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
-import org.scalatest.{BeforeAndAfterAll, Suite}
-import scala.reflect.io.Directory
 
-import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicReference
-import org.junit.rules.TemporaryFolder
+import scala.reflect.io.Directory
 
 /** Shared Docker container and Spark instance between all tests cases */
 object SharedSparkContext extends Logging {
+
+  private lazy val warehouseLocation = Files.createTempDirectory("spark-wirehouse").toFile
 
   val container: TarantoolCartridgeContainer = new TarantoolCartridgeContainer(
     directoryBinding = "cartridge",
@@ -21,38 +20,44 @@ object SharedSparkContext extends Logging {
     topologyConfigurationFile = "cartridge/topology.lua",
     routerPassword = "testapp-cluster-cookie"
   )
-
   private val sparkSession: AtomicReference[SparkSession] = new AtomicReference[SparkSession]()
   private val master = "local"
   private val appName = "tarantool-spark-test"
-  private lazy val warehouseLocation = Files.createTempDirectory("spark-wirehouse").toFile
 
   def setup(): Unit =
     container.start()
 
-  def setupSpark(): Unit =
+  def setupSpark(withHiveSupport: Boolean = false): Unit =
     if (sparkSession.get() == null) {
       sparkSession.compareAndSet(
         null,
         configureSparkSession(
           SparkSession.builder(),
-          confWithTarantoolProperties(container.getRouterPort)
+          confWithTarantoolProperties(container.getRouterPort),
+          withHiveSupport
         ).getOrCreate()
       )
     }
 
   private def configureSparkSession(
     sessionBuilder: SparkSession.Builder,
-    conf: SparkConf
-  ): SparkSession.Builder =
-    sessionBuilder
+    conf: SparkConf,
+    withHiveSupport: Boolean = false
+  ): SparkSession.Builder = {
+    val warehouseLocationPath = warehouseLocation.getAbsolutePath
+    var session = sessionBuilder
       .config(conf)
-      .config("spark.sql.warehouse.dir", warehouseLocation.getAbsolutePath())
+      .config("spark.sql.warehouse.dir", warehouseLocationPath)
       .config(
         "javax.jdo.option.ConnectionURL",
-        "jdbc:derby:;databaseName=%s;create=true".format(warehouseLocation.getAbsolutePath())
+        "jdbc:derby:;databaseName=tarantoolTest;create=true"
       )
-      .enableHiveSupport()
+
+    if (withHiveSupport)
+      session = session.enableHiveSupport()
+
+    session
+  }
 
   private def confWithTarantoolProperties(routerPort: Int): SparkConf = {
     val _conf = new SparkConf(false)
@@ -79,9 +84,9 @@ object SharedSparkContext extends Logging {
     cleanupTempDirectory()
   }
 
-  def teardown(): Unit =
-    container.stop()
-
   def cleanupTempDirectory(): Unit =
     Directory(warehouseLocation).deleteRecursively()
+
+  def teardown(): Unit =
+    container.stop()
 }

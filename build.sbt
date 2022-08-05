@@ -41,6 +41,8 @@ val commonDependencies = Seq(
   "org.scalatest"      %% "scalatest"                      % "3.2.9" % Test,
   "org.scalamock"      %% "scalamock"                      % "5.1.0" % Test,
   "com.dimafeng"       %% "testcontainers-scala-scalatest" % "0.39.5" % Test,
+  "org.slf4j"          % "slf4j-api"                       % "1.7.36" % Test,
+  "ch.qos.logback"     % "logback-core"                    % "1.2.5" % Test,
   "ch.qos.logback"     % "logback-classic"                 % "1.2.5" % Test,
   "org.apache.derby"   % "derby"                           % "10.11.1.1" % Test
 )
@@ -128,8 +130,12 @@ ThisBuild / useCoursier := false
 ThisBuild / updateSbtClassifiers / useCoursier := true
 
 // Test settings
-ThisBuild / Test / fork := false
+ThisBuild / Test / fork := true
 ThisBuild / Test / parallelExecution := false
+ThisBuild / Test / logLevel := Level.Info
+ThisBuild / Test / javaOptions ++= Seq(
+  "-DlogLevel=INFO"
+)
 
 // ScalaTest
 ThisBuild / Test / logBuffered := false

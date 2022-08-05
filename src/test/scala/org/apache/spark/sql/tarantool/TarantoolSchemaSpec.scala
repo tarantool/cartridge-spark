@@ -24,7 +24,7 @@ class TarantoolSchemaSpec extends AnyFlatSpec {
         DataTypes.createStructField("lastname", StringType, true),
         DataTypes.createStructField("id", StringType, true),
         DataTypes.createStructField("age", LongType, true),
-        DataTypes.createStructField("salary", DataTypes.createDecimalType(), true),
+        DataTypes.createStructField("salary", DecimalType.SYSTEM_DEFAULT, true),
         DataTypes.createStructField("discount", DoubleType, true),
         DataTypes.createStructField("favourite_constant", DoubleType, true),
         DataTypes.createStructField("married", BooleanType, true),

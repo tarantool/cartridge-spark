@@ -6,7 +6,7 @@ import io.tarantool.spark.connector.config.TarantoolConfig
 import io.tarantool.spark.connector.connection.TarantoolConnection
 import io.tarantool.spark.connector.util.ScalaToJavaHelper.toJavaSupplier
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.types.{DataType, DataTypes, StructType}
+import org.apache.spark.sql.types.{DataType, DataTypes, DecimalType, StructType}
 
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.language.implicitConversions
@@ -72,7 +72,7 @@ object TarantoolFieldTypes extends Enumeration {
   val DOUBLE: TarantoolFieldType = TarantoolFieldType("double", DataTypes.DoubleType)
   val INTEGER: TarantoolFieldType = TarantoolFieldType("integer", DataTypes.LongType)
   val BOOLEAN: TarantoolFieldType = TarantoolFieldType("boolean", DataTypes.BooleanType)
-  val DECIMAL: TarantoolFieldType = TarantoolFieldType("decimal", DataTypes.createDecimalType())
+  val DECIMAL: TarantoolFieldType = TarantoolFieldType("decimal", createDecimalType())
   val UUID: TarantoolFieldType = TarantoolFieldType("uuid", DataTypes.StringType)
 
   val ARRAY: TarantoolFieldType =
@@ -82,6 +82,9 @@ object TarantoolFieldTypes extends Enumeration {
     "map",
     DataTypes.createMapType(DataTypes.StringType, DataTypes.StringType, true)
   )
+
+  def createDecimalType(): DecimalType =
+    DecimalType.SYSTEM_DEFAULT
 
   def withNameLowerCase(name: String): Value =
     values

@@ -52,3 +52,4 @@ codereview.rc
 metastore_db/
 derby.log
 spark-warehouse/
+tarantoolTest/
