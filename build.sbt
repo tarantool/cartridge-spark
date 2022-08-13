@@ -131,7 +131,7 @@ ThisBuild / updateSbtClassifiers / useCoursier := true
 
 // Test settings
 ThisBuild / Test / fork := true
-ThisBuild / Test / parallelExecution := false
+ThisBuild / Test / parallelExecution := true
 ThisBuild / Test / logLevel := Level.Info
 ThisBuild / Test / javaOptions ++= Seq(
   "-DlogLevel=INFO"

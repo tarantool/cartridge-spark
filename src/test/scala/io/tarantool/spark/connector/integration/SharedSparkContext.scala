@@ -14,11 +14,16 @@ object SharedSparkContext extends Logging {
 
   private lazy val warehouseLocation = Files.createTempDirectory("spark-wirehouse").toFile
 
+  private lazy val clusterCookie =
+    sys.env.getOrElse("TARANTOOL_CLUSTER_COOKIE", "testapp-cluster-cookie")
+  private lazy val buildArgs = Map(("TARANTOOL_CLUSTER_COOKIE", clusterCookie))
+
   val container: TarantoolCartridgeContainer = new TarantoolCartridgeContainer(
     directoryBinding = "cartridge",
     instancesFile = "cartridge/instances.yml",
     topologyConfigurationFile = "cartridge/topology.lua",
-    routerPassword = "testapp-cluster-cookie"
+    routerPassword = clusterCookie,
+    buildArgs = buildArgs
   )
   private val sparkSession: AtomicReference[SparkSession] = new AtomicReference[SparkSession]()
   private val master = "local"
@@ -47,6 +52,7 @@ object SharedSparkContext extends Logging {
     val warehouseLocationPath = warehouseLocation.getAbsolutePath
     var session = sessionBuilder
       .config(conf)
+      .config("spark.ui.enabled", false)
       .config("spark.sql.warehouse.dir", warehouseLocationPath)
       .config(
         "javax.jdo.option.ConnectionURL",
@@ -64,7 +70,7 @@ object SharedSparkContext extends Logging {
       .setMaster(master)
       .setAppName(appName)
     _conf.set("tarantool.username", "admin")
-    _conf.set("tarantool.password", "testapp-cluster-cookie")
+    _conf.set("tarantool.password", clusterCookie)
     _conf.set("tarantool.hosts", "127.0.0.1:" + routerPort)
 
     _conf

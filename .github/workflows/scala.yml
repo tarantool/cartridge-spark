@@ -49,7 +49,8 @@ jobs:
           TARANTOOL_VERSION: ${{ matrix.tarantool }}
           TARANTOOL_SERVER_USER: root
           TARANTOOL_SERVER_GROUP: root
-        run: sbt ++${{ matrix.scala }} coverage test coverageReport
+          TARANTOOL_CLUSTER_COOKIE: testapp-cluster-cookie-${{ matrix.scala }}-${{ matrix.tarantool }}
+        run: sbt ++${{ matrix.scala }} coverageOn test coverageReport coverageOff
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:

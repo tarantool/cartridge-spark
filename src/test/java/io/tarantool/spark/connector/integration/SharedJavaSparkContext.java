@@ -10,8 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.TarantoolCartridgeContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Alexey Kuzin
@@ -19,12 +24,22 @@ import java.util.concurrent.atomic.AtomicReference;
 public abstract class SharedJavaSparkContext {
 
     private static final Logger logger = LoggerFactory.getLogger(SharedJavaSparkContext.class);
+    private static final String clusterCookie =
+        System.getenv().getOrDefault("TARANTOOL_CLUSTER_COOKIE", "testapp-cluster-cookie");
+    private static final Map<String, String> buildArgs =
+        Collections.singletonMap("TARANTOOL_CLUSTER_COOKIE", clusterCookie);
 
     protected static final TarantoolCartridgeContainer container =
             new TarantoolCartridgeContainer(
+                    "Dockerfile",
+                    "tarantool-spark-test",
                     "cartridge/instances.yml",
-                    "cartridge/topology.lua")
+                    "cartridge/topology.lua",
+                    buildArgs)
                     .withDirectoryBinding("cartridge")
+                    .withRouterPassword(clusterCookie)
+                    .waitingFor(Wait.forLogMessage(".*Listening HTTP on.*", 2))
+                    .withStartupTimeout(Duration.ofMinutes(10))
                     .withLogConsumer(new Slf4jLogConsumer(logger));
 
     protected static void startCluster() {
@@ -47,6 +62,7 @@ public abstract class SharedJavaSparkContext {
 
     private static SparkSession getSparkSession() {
         return SparkSession.builder()
+                .config("spark.ui.enabled", false)
                 .config(confWithTarantoolProperties(container.getRouterPort()))
                 .getOrCreate();
     }
@@ -56,7 +72,7 @@ public abstract class SharedJavaSparkContext {
                 .setMaster(master)
                 .setAppName(appName);
         _conf.set("tarantool.username", "admin");
-        _conf.set("tarantool.password", "testapp-cluster-cookie");
+        _conf.set("tarantool.password", clusterCookie);
         _conf.set("tarantool.hosts", "127.0.0.1:" + routerPort);
 
         return _conf;
