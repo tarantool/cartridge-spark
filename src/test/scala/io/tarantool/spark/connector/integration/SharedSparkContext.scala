@@ -16,9 +16,16 @@ object SharedSparkContext extends Logging {
 
   private lazy val clusterCookie =
     sys.env.getOrElse("TARANTOOL_CLUSTER_COOKIE", "testapp-cluster-cookie")
-  private lazy val buildArgs = Map(("TARANTOOL_CLUSTER_COOKIE", clusterCookie))
 
   private lazy val instancesFileName =
+    sys.env.getOrElse("TARANTOOL_INSTANCES_FILE", "instances.yml")
+
+  private lazy val buildArgs = Map(
+    ("TARANTOOL_CLUSTER_COOKIE", clusterCookie),
+    ("TARANTOOL_INSTANCES_FILE", instancesFileName)
+  )
+
+  private lazy val instanceFileName =
     sys.env.getOrElse("TARANTOOL_INSTANCE_FILE", "cartridge/instances.yml")
 
   private lazy val topologyFileName =
@@ -26,7 +33,7 @@ object SharedSparkContext extends Logging {
 
   val container: TarantoolCartridgeContainer = new TarantoolCartridgeContainer(
     directoryBinding = "cartridge",
-    instancesFile = instancesFileName,
+    instancesFile = instanceFileName,
     topologyConfigurationFile = topologyFileName,
     routerPassword = clusterCookie,
     buildArgs = buildArgs

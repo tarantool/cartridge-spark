@@ -14,7 +14,6 @@ import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,9 +25,13 @@ public abstract class SharedJavaSparkContext {
     private static final Logger logger = LoggerFactory.getLogger(SharedJavaSparkContext.class);
     private static final String clusterCookie =
         System.getenv().getOrDefault("TARANTOOL_CLUSTER_COOKIE", "testapp-cluster-cookie");
-    private static final Map<String, String> buildArgs =
-        Collections.singletonMap("TARANTOOL_CLUSTER_COOKIE", clusterCookie);
     private static final String instancesFileName =
+        System.getenv().getOrDefault("TARANTOOL_INSTANCES_FILE", "instances.yml");
+    private static final Map<String, String> buildArgs = new HashMap<String, String>() {{
+        put("TARANTOOL_CLUSTER_COOKIE", clusterCookie);
+        put("TARANTOOL_INSTANCES_FILE", instancesFileName);
+    }};
+    private static final String instanceFileName =
         System.getenv().getOrDefault("TARANTOOL_INSTANCE_FILE", "cartridge/instances.yml");
     private static final String topologyFileName =
         System.getenv().getOrDefault("TARANTOOL_TOPOLOGY_FILE", "cartridge/topology.lua");
@@ -37,7 +40,7 @@ public abstract class SharedJavaSparkContext {
             new TarantoolCartridgeContainer(
                     "Dockerfile",
                     "tarantool-spark-test",
-                    instancesFileName,
+                    instanceFileName,
                     topologyFileName,
                     buildArgs)
                     .withDirectoryBinding("cartridge")
