@@ -19,12 +19,15 @@ object SharedSparkContext extends Logging {
   private lazy val buildArgs = Map(("TARANTOOL_CLUSTER_COOKIE", clusterCookie))
 
   private lazy val instancesFileName =
-    sys.env.getOrElse("TARANTOOL_INSTANCES_FILE", "cartridge/instances.yml")
+    sys.env.getOrElse("TARANTOOL_INSTANCE_FILE", "cartridge/instances.yml")
+
+  private lazy val topologyFileName =
+    sys.env.getOrElse("TARANTOOL_TOPOLOGY_FILE", "cartridge/topology.lua")
 
   val container: TarantoolCartridgeContainer = new TarantoolCartridgeContainer(
     directoryBinding = "cartridge",
     instancesFile = instancesFileName,
-    topologyConfigurationFile = "cartridge/replicasets.yml",
+    topologyConfigurationFile = topologyFileName,
     routerPassword = clusterCookie,
     buildArgs = buildArgs
   )
