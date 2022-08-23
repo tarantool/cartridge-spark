@@ -28,13 +28,15 @@ public abstract class SharedJavaSparkContext {
         System.getenv().getOrDefault("TARANTOOL_CLUSTER_COOKIE", "testapp-cluster-cookie");
     private static final Map<String, String> buildArgs =
         Collections.singletonMap("TARANTOOL_CLUSTER_COOKIE", clusterCookie);
+    private static final String instancesFileName =
+        System.getenv().getOrDefault("TARANTOOL_INSTANCES_FILE", "cartridge/instances.yml");
 
     protected static final TarantoolCartridgeContainer container =
             new TarantoolCartridgeContainer(
                     "Dockerfile",
                     "tarantool-spark-test",
-                    "cartridge/instances.yml",
-                    "cartridge/topology.lua",
+                    instancesFileName,
+                    "cartridge/replicasets.yml",
                     buildArgs)
                     .withDirectoryBinding("cartridge")
                     .withRouterPassword(clusterCookie)
