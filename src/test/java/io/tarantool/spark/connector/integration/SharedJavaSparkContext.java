@@ -35,6 +35,10 @@ public abstract class SharedJavaSparkContext {
         System.getenv().getOrDefault("TARANTOOL_INSTANCE_FILE", "cartridge/instances.yml");
     private static final String topologyFileName =
         System.getenv().getOrDefault("TARANTOOL_TOPOLOGY_FILE", "cartridge/topology.lua");
+    private static final String routerPort =
+        System.getenv().getOrDefault("TARANTOOL_ROUTER_PORT", "3301");
+    private static final String apiPort =
+        System.getenv().getOrDefault("TARANTOOL_ROUTER_API_PORT", "8081");
 
     protected static final TarantoolCartridgeContainer container =
             new TarantoolCartridgeContainer(
@@ -45,6 +49,8 @@ public abstract class SharedJavaSparkContext {
                     buildArgs)
                     .withDirectoryBinding("cartridge")
                     .withRouterPassword(clusterCookie)
+                    .withRouterPort(Integer.valueOf(routerPort))
+                    .withAPIPort(Integer.valueOf(apiPort))
                     .waitingFor(Wait.forLogMessage(".*Listening HTTP on.*", 2))
                     .withStartupTimeout(Duration.ofMinutes(10))
                     .withLogConsumer(new Slf4jLogConsumer(logger));

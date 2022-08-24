@@ -31,11 +31,19 @@ object SharedSparkContext extends Logging {
   private lazy val topologyFileName =
     sys.env.getOrElse("TARANTOOL_TOPOLOGY_FILE", "cartridge/topology.lua")
 
+  private lazy val routerPort =
+    sys.env.getOrElse("TARANTOOL_ROUTER_PORT", "3301")
+
+  private lazy val apiPort =
+    sys.env.getOrElse("TARANTOOL_ROUTER_API_PORT", "8081")
+
   val container: TarantoolCartridgeContainer = new TarantoolCartridgeContainer(
     directoryBinding = "cartridge",
     instancesFile = instanceFileName,
     topologyConfigurationFile = topologyFileName,
     routerPassword = clusterCookie,
+    routerPort = Integer.valueOf(routerPort),
+    apiPort = Integer.valueOf(apiPort),
     buildArgs = buildArgs
   )
   private val sparkSession: AtomicReference[SparkSession] = new AtomicReference[SparkSession]()
