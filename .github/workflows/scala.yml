@@ -55,7 +55,6 @@ jobs:
           TARANTOOL_SERVER_GROUP: root
           TARANTOOL_CLUSTER_COOKIE: testapp-cluster-cookie-${{ matrix.scala }}-${{ matrix.tarantool }}
           TARANTOOL_INSTANCES_FILE: 'instances_${{ matrix.scala }}_${{ matrix.tarantool }}.yml'
-          TARANTOOL_INSTANCE_FILE: 'cartridge/instances_${{ matrix.scala }}_${{ matrix.tarantool }}.yml'
           TARANTOOL_TOPOLOGY_FILE: 'cartridge/topology_${{ matrix.scala }}_${{ matrix.tarantool }}.lua'
           TARANTOOL_ROUTER_PORT: ${{ matrix.router_port }}
           TARANTOOL_ROUTER_API_PORT: ${{ matrix.router_api_port }}

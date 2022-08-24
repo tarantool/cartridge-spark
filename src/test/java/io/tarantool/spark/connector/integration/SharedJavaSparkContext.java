@@ -31,8 +31,6 @@ public abstract class SharedJavaSparkContext {
         put("TARANTOOL_CLUSTER_COOKIE", clusterCookie);
         put("TARANTOOL_INSTANCES_FILE", instancesFileName);
     }};
-    private static final String instanceFileName =
-        System.getenv().getOrDefault("TARANTOOL_INSTANCE_FILE", "cartridge/instances.yml");
     private static final String topologyFileName =
         System.getenv().getOrDefault("TARANTOOL_TOPOLOGY_FILE", "cartridge/topology.lua");
     private static final String routerPort =
@@ -44,7 +42,7 @@ public abstract class SharedJavaSparkContext {
             new TarantoolCartridgeContainer(
                     "Dockerfile",
                     "tarantool-spark-test",
-                    instanceFileName,
+                    "cartridge/" + instancesFileName,
                     topologyFileName,
                     buildArgs)
                     .withDirectoryBinding("cartridge")
