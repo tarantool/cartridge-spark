@@ -47,6 +47,8 @@ object SharedSparkContext extends Logging {
   private val master = "local"
   private val appName = "tarantool-spark-test"
 
+  private val CONTAINER_STOP_DELAY = 10000 // ms
+
   def setup(): Unit =
     container.start()
 
@@ -111,6 +113,11 @@ object SharedSparkContext extends Logging {
   def cleanupTempDirectory(): Unit =
     Directory(warehouseLocation).deleteRecursively()
 
-  def teardown(): Unit =
+  def teardown(): Unit = {
     container.stop()
+    // This sleep is necessary for the container to finish freeing up
+    // the resources like the network ports. Otherwise the tests starting
+    // immediately after will encounter that the resources are not available.
+    Thread.sleep(CONTAINER_STOP_DELAY)
+  }
 }
