@@ -6,7 +6,11 @@ import org.testcontainers.containers.output.Slf4jLogConsumer
 import org.testcontainers.containers.{
   TarantoolCartridgeContainer => JavaTarantoolCartridgeContainer
 }
+import org.testcontainers.containers.wait.strategy.Wait
 
+import scala.collection.JavaConverters.mapAsJavaMapConverter
+
+import java.time.Duration
 import java.util
 import java.util.concurrent.CompletableFuture
 
@@ -20,12 +24,19 @@ case class TarantoolCartridgeContainer(
   routerPort: Int = TarantoolCartridgeContainer.defaultRouterPort,
   apiPort: Int = TarantoolCartridgeContainer.defaultAPIPort,
   routerUsername: String = TarantoolCartridgeContainer.defaultRouterUsername,
-  routerPassword: String = TarantoolCartridgeContainer.defaultRouterPassword
+  routerPassword: String = TarantoolCartridgeContainer.defaultRouterPassword,
+  buildArgs: Map[String, String] = TarantoolCartridgeContainer.defaultBuildArgs
 ) extends SingleContainer[JavaTarantoolCartridgeContainer] {
+  val buildImageName: String = "tarantool-spark-test"
 
   lazy val container: JavaTarantoolCartridgeContainer =
-    new JavaTarantoolCartridgeContainer(dockerFile, instancesFile, topologyConfigurationFile)
-      .withLogConsumer(logConsumer)
+    new JavaTarantoolCartridgeContainer(
+      dockerFile,
+      buildImageName,
+      instancesFile,
+      topologyConfigurationFile,
+      buildArgs.asJava
+    ).withLogConsumer(logConsumer)
       .withInstanceDir(instanceDir)
       .withDirectoryBinding(directoryBinding)
       .withRouterHost(routerHost)
@@ -33,6 +44,9 @@ case class TarantoolCartridgeContainer(
       .withAPIPort(apiPort)
       .withRouterUsername(routerUsername)
       .withRouterPassword(routerPassword)
+      .waitingFor(Wait.forLogMessage(".*Listening HTTP on.*", 2))
+      .withStartupTimeout(Duration.ofMinutes(10))
+
   val logger: Logger = LoggerFactory.getLogger("tarantool")
   val logConsumer = new Slf4jLogConsumer(logger)
 
@@ -54,6 +68,7 @@ object TarantoolCartridgeContainer {
   val defaultAPIPort = 8081
   val defaultRouterUsername = "admin"
   val defaultRouterPassword = "testapp-cluster-cookie"
+  val defaultBuildArgs = Map[String, String]()
 
   case class Def(
     dockerFile: String = TarantoolCartridgeContainer.defaultDockerFile,
@@ -66,7 +81,8 @@ object TarantoolCartridgeContainer {
     routerPort: Int = TarantoolCartridgeContainer.defaultRouterPort,
     apiPort: Int = TarantoolCartridgeContainer.defaultAPIPort,
     routerUsername: String = TarantoolCartridgeContainer.defaultRouterUsername,
-    routerPassword: String = TarantoolCartridgeContainer.defaultRouterPassword
+    routerPassword: String = TarantoolCartridgeContainer.defaultRouterPassword,
+    buildArgs: Map[String, String] = TarantoolCartridgeContainer.defaultBuildArgs
   ) extends ContainerDef {
     override type Container = TarantoolCartridgeContainer
 
@@ -81,7 +97,8 @@ object TarantoolCartridgeContainer {
         routerPort,
         apiPort,
         routerUsername,
-        routerPassword
+        routerPassword,
+        buildArgs
       )
   }
 }

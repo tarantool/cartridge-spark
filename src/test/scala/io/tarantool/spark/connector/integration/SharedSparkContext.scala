@@ -14,15 +14,40 @@ object SharedSparkContext extends Logging {
 
   private lazy val warehouseLocation = Files.createTempDirectory("spark-wirehouse").toFile
 
+  private lazy val clusterCookie =
+    sys.env.getOrElse("TARANTOOL_CLUSTER_COOKIE", "testapp-cluster-cookie")
+
+  private lazy val instancesFileName =
+    sys.env.getOrElse("TARANTOOL_INSTANCES_FILE", "instances.yml")
+
+  private lazy val buildArgs = Map(
+    ("TARANTOOL_CLUSTER_COOKIE", clusterCookie),
+    ("TARANTOOL_INSTANCES_FILE", instancesFileName)
+  )
+
+  private lazy val topologyFileName =
+    sys.env.getOrElse("TARANTOOL_TOPOLOGY_FILE", "cartridge/topology.lua")
+
+  private lazy val routerPort =
+    sys.env.getOrElse("TARANTOOL_ROUTER_PORT", "3301")
+
+  private lazy val apiPort =
+    sys.env.getOrElse("TARANTOOL_ROUTER_API_PORT", "8081")
+
   val container: TarantoolCartridgeContainer = new TarantoolCartridgeContainer(
     directoryBinding = "cartridge",
-    instancesFile = "cartridge/instances.yml",
-    topologyConfigurationFile = "cartridge/topology.lua",
-    routerPassword = "testapp-cluster-cookie"
+    instancesFile = "cartridge/" + instancesFileName,
+    topologyConfigurationFile = topologyFileName,
+    routerPassword = clusterCookie,
+    routerPort = Integer.valueOf(routerPort),
+    apiPort = Integer.valueOf(apiPort),
+    buildArgs = buildArgs
   )
   private val sparkSession: AtomicReference[SparkSession] = new AtomicReference[SparkSession]()
   private val master = "local"
   private val appName = "tarantool-spark-test"
+
+  private val CONTAINER_STOP_DELAY = 10000 // ms
 
   def setup(): Unit =
     container.start()
@@ -47,6 +72,7 @@ object SharedSparkContext extends Logging {
     val warehouseLocationPath = warehouseLocation.getAbsolutePath
     var session = sessionBuilder
       .config(conf)
+      .config("spark.ui.enabled", false)
       .config("spark.sql.warehouse.dir", warehouseLocationPath)
       .config(
         "javax.jdo.option.ConnectionURL",
@@ -64,7 +90,7 @@ object SharedSparkContext extends Logging {
       .setMaster(master)
       .setAppName(appName)
     _conf.set("tarantool.username", "admin")
-    _conf.set("tarantool.password", "testapp-cluster-cookie")
+    _conf.set("tarantool.password", clusterCookie)
     _conf.set("tarantool.hosts", "127.0.0.1:" + routerPort)
 
     _conf
@@ -87,6 +113,11 @@ object SharedSparkContext extends Logging {
   def cleanupTempDirectory(): Unit =
     Directory(warehouseLocation).deleteRecursively()
 
-  def teardown(): Unit =
+  def teardown(): Unit = {
     container.stop()
+    // This sleep is necessary for the container to finish freeing up
+    // the resources like the network ports. Otherwise the tests starting
+    // immediately after will encounter that the resources are not available.
+    Thread.sleep(CONTAINER_STOP_DELAY)
+  }
 }

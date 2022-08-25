@@ -38,7 +38,6 @@ local ok, err = cartridge.cfg({
         'app.roles.api_router',
         'app.roles.api_storage',
     },
-    cluster_cookie = 'testapp-cluster-cookie',
 })
 
 assert(ok, tostring(err))
