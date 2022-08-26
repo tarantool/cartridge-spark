@@ -14,7 +14,7 @@ class TarantoolConnectionSpec
     with Matchers
     with TarantoolSparkClusterTestSuite {
 
-  "Client in Connection" should " be initialized only once" in {
+  "Client in TarantoolConnection" should " be initialized only once" in {
     val conn1 = TarantoolConnection()
     val conn2 = TarantoolConnection()
 
@@ -27,5 +27,26 @@ class TarantoolConnectionSpec
     conn1.close()
     conn2.client(conf) should (not(equal(client)))
     conn2.close()
+  }
+
+  "Client in TarantoolConnection" should " have the specified settings" in {
+    val sparkConf = SharedSparkContext.sc.getConf
+      .clone()
+      .set("tarantool.space", "test_space")
+      .set("tarantool.connectTimeout", "10")
+      .set("tarantool.readTimeout", "20")
+      .set("tarantool.requestTimeout", "30")
+      .set("tarantool.connections", "3")
+    val tConf: TarantoolConfig = TarantoolConfig(sparkConf)
+    val conn = TarantoolConnection()
+    val client = conn.client(tConf)
+    val actualConfig = client.getConfig()
+
+    actualConfig.getConnectTimeout() should equal(10)
+    actualConfig.getReadTimeout() should equal(20)
+    actualConfig.getRequestTimeout() should equal(30)
+    actualConfig.getConnections() should equal(3)
+
+    conn.close()
   }
 }

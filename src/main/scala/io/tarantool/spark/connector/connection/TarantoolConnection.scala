@@ -101,6 +101,10 @@ class TarantoolConnection[T <: Packable, R <: util.Collection[T]](
       builder.withRequestTimeout(cnf.timeouts.request.get)
     }
 
+    if (cnf.connections.isDefined) {
+      builder.withConnections(cnf.connections.get)
+    }
+
     builder
   }
 

@@ -23,6 +23,7 @@ class TarantoolConfigSpec extends AnyFlatSpec with Matchers {
     tConf.hosts should equal(Array(new TarantoolServerAddress("127.0.0.1:3301")))
     tConf.credentials should equal(None)
     tConf.timeouts should equal(Timeouts(None, None, None))
+    tConf.connections should equal(None)
   }
 
   it should "apply settings from options with priority" in {
@@ -62,9 +63,11 @@ class TarantoolConfigSpec extends AnyFlatSpec with Matchers {
       .set("tarantool.hosts", "127.0.0.3:3303")
       .set("tarantool.username", "aaaaa")
       .set("tarantool.password", "bbbbb")
+      .set("tarantool.connections", "123")
     val tConf: TarantoolConfig = TarantoolConfig(sparkConf)
     tConf.hosts should equal(Array(new TarantoolServerAddress("127.0.0.3:3303")))
     tConf.credentials should equal(Some(Credentials("aaaaa", "bbbbb")))
     tConf.timeouts should equal(Timeouts(Some(10), Some(20), Some(30)))
+    tConf.connections should equal(Some(123))
   }
 }
