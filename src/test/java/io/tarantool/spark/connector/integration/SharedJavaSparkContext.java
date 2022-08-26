@@ -49,7 +49,7 @@ public abstract class SharedJavaSparkContext {
                     .withRouterPassword(clusterCookie)
                     .withRouterPort(Integer.valueOf(routerPort))
                     .withAPIPort(Integer.valueOf(apiPort))
-                    .waitingFor(Wait.forLogMessage(".*Listening HTTP on.*", 2))
+                    .waitingFor(Wait.forLogMessage(".*Listening HTTP on.*", 6))
                     .withStartupTimeout(Duration.ofMinutes(10))
                     .withLogConsumer(new Slf4jLogConsumer(logger));
 
