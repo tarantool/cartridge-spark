@@ -1,11 +1,11 @@
 testapp.router:
   workdir: ./tmp/db_dev/3301
-  advertise_uri: localhost:3301
+  advertise_uri: 0.0.0.0:3301
   http_port: 8081
 
 testapp.second-router:
   workdir: ./tmp/db_dev/3311
-  advertise_uri: localhost:3311
+  advertise_uri: 0.0.0.0:3311
   http_port: 8091
 
 testapp.s1-master:

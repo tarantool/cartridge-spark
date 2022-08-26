@@ -2,11 +2,11 @@ cartridge = require('cartridge')
 replicasets = {{
     alias = 'app-router',
     roles = {'vshard-router', 'app.roles.api_router'},
-    join_servers = {{uri = 'localhost:3301'}}
+    join_servers = {{uri = '0.0.0.0:3301'}}
 }, {
     alias = 'app-router-second',
     roles = {'vshard-router', 'app.roles.api_router'},
-    join_servers = {{uri = 'localhost:3311'}}
+    join_servers = {{uri = '0.0.0.0:3311'}}
 }, {
     alias = 's1-storage',
     roles = {'vshard-storage', 'app.roles.api_storage'},

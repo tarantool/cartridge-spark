@@ -44,7 +44,7 @@ case class TarantoolCartridgeContainer(
       .withAPIPort(apiPort)
       .withRouterUsername(routerUsername)
       .withRouterPassword(routerPassword)
-      .waitingFor(Wait.forLogMessage(".*Listening HTTP on.*", 2))
+      .waitingFor(Wait.forLogMessage(".*Listening HTTP on.*", 6))
       .withStartupTimeout(Duration.ofMinutes(10))
 
   val logger: Logger = LoggerFactory.getLogger("tarantool")
