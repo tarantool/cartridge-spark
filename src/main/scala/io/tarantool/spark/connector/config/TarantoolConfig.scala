@@ -11,7 +11,8 @@ case class Timeouts(connect: Option[Int], read: Option[Int], request: Option[Int
 case class TarantoolConfig(
   hosts: Seq[TarantoolServerAddress],
   credentials: Option[Credentials],
-  timeouts: Timeouts
+  timeouts: Timeouts,
+  connections: Option[Int]
 ) extends Serializable
 
 object TarantoolConfig {
@@ -27,6 +28,7 @@ object TarantoolConfig {
   private val REQUEST_TIMEOUT = PREFIX + "requestTimeout"
 
   private val HOSTS = PREFIX + "hosts"
+  private val CONNECTIONS = PREFIX + "connections"
 
   //options with spark. prefix
   private val SPARK_USERNAME = SPARK_PREFIX + USERNAME
@@ -37,9 +39,15 @@ object TarantoolConfig {
   private val SPARK_REQUEST_TIMEOUT = SPARK_PREFIX + REQUEST_TIMEOUT
 
   private val SPARK_HOSTS = SPARK_PREFIX + HOSTS
+  private val SPARK_CONNECTIONS = SPARK_PREFIX + CONNECTIONS
 
   def apply(cfg: SparkConf): TarantoolConfig =
-    TarantoolConfig(parseHosts(cfg), parseCredentials(cfg), parseTimeouts(cfg))
+    TarantoolConfig(
+      parseHosts(cfg),
+      parseCredentials(cfg),
+      parseTimeouts(cfg),
+      parseIntOption(cfg, CONNECTIONS, SPARK_CONNECTIONS)
+    )
 
   def parseCredentials(cfg: SparkConf): Option[Credentials] = {
     val username = cfg.getOption(USERNAME).orElse(cfg.getOption(SPARK_USERNAME))
@@ -70,11 +78,11 @@ object TarantoolConfig {
 
   def parseTimeouts(cfg: SparkConf): Timeouts =
     Timeouts(
-      parseTimeout(cfg, CONNECT_TIMEOUT, SPARK_CONNECT_TIMEOUT),
-      parseTimeout(cfg, READ_TIMEOUT, SPARK_READ_TIMEOUT),
-      parseTimeout(cfg, REQUEST_TIMEOUT, SPARK_REQUEST_TIMEOUT)
+      parseIntOption(cfg, CONNECT_TIMEOUT, SPARK_CONNECT_TIMEOUT),
+      parseIntOption(cfg, READ_TIMEOUT, SPARK_READ_TIMEOUT),
+      parseIntOption(cfg, REQUEST_TIMEOUT, SPARK_REQUEST_TIMEOUT)
     )
 
-  def parseTimeout(cfg: SparkConf, name: String, nameWithSparkPrefix: String): Option[Int] =
+  def parseIntOption(cfg: SparkConf, name: String, nameWithSparkPrefix: String): Option[Int] =
     cfg.getOption(name).orElse(cfg.getOption(nameWithSparkPrefix)).map(_.toInt)
 }

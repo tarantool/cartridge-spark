@@ -46,6 +46,7 @@ libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.4.0"
 | tarantool.connectTimeout                | server connect timeout, in milliseconds              | 1000            |
 | tarantool.readTimeout                   | socket read timeout, in milliseconds                 | 1000            |
 | tarantool.requestTimeout                | request completion timeout, in milliseconds          | 2000            |
+| tarantool.connections                   | number of connections established with each host     | 1               |
 | tarantool.cursorBatchSize               | default limit for prefetching tuples in RDD iterator | 1000            |
 
 ### Dataset API request options
