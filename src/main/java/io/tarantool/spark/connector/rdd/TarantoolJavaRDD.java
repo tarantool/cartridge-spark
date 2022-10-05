@@ -6,7 +6,7 @@ import scala.reflect.ClassTag;
 import static io.tarantool.spark.connector.util.ScalaToJavaHelper.getClassTag;
 
 /**
- * Bridge from Scala {@link TarantoolRDD} to Java.
+ * Bridge from Scala {@link TarantoolReadRDD} to Java.
  *
  * Instances of this class may be instantiated using methods of {@link SparkContextJavaFunctions}.
  *
@@ -14,16 +14,16 @@ import static io.tarantool.spark.connector.util.ScalaToJavaHelper.getClassTag;
  */
 public class TarantoolJavaRDD<R> extends JavaRDD<R> {
 
-    public TarantoolJavaRDD(TarantoolRDD<R> rdd, Class<R> clazz) {
+    public TarantoolJavaRDD(TarantoolReadRDD<R> rdd, Class<R> clazz) {
         super(rdd, getClassTag(clazz));
     }
 
-    public TarantoolJavaRDD(TarantoolRDD<R> rdd, ClassTag<R> classTag) {
+    public TarantoolJavaRDD(TarantoolReadRDD<R> rdd, ClassTag<R> classTag) {
         super(rdd, classTag);
     }
 
     @Override
-    public TarantoolRDD<R> rdd() {
-        return (TarantoolRDD<R>) super.rdd();
+    public TarantoolReadRDD<R> rdd() {
+        return (TarantoolReadRDD<R>) super.rdd();
     }
 }

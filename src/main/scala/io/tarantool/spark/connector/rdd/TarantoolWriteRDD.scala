@@ -2,23 +2,15 @@ package io.tarantool.spark.connector.rdd
 
 import io.tarantool.driver.api.conditions.Conditions
 import io.tarantool.driver.api.tuple.{DefaultTarantoolTupleFactory, TarantoolTuple}
-import io.tarantool.driver.api.{TarantoolClient, TarantoolResult}
+import io.tarantool.driver.api.TarantoolResult
 import io.tarantool.driver.mappers.{DefaultMessagePackMapperFactory, MessagePackMapper}
-import io.tarantool.spark.connector.TarantoolSparkException
-import io.tarantool.spark.connector.config.{ReadConfig, TarantoolConfig}
+import io.tarantool.spark.connector.{Logging, TarantoolSparkException}
+import io.tarantool.spark.connector.config.{TarantoolConfig, WriteConfig}
 import io.tarantool.spark.connector.connection.TarantoolConnection
-import io.tarantool.spark.connector.partition.TarantoolPartition
-import io.tarantool.spark.connector.rdd.converter.{FunctionBasedTupleConverter, TupleConverter}
-import io.tarantool.spark.connector.util.ScalaToJavaHelper.{
-  toJavaBiFunction,
-  toJavaConsumer,
-  toJavaFunction
-}
-import io.tarantool.spark.connector.util.TarantoolCursorIterator
-import org.apache.spark.rdd.RDD
+import io.tarantool.spark.connector.util.ScalaToJavaHelper.{toJavaBiFunction, toJavaFunction}
 import org.apache.spark.sql.tarantool.MapFunctions.rowToTuple
 import org.apache.spark.sql.{DataFrame, Row}
-import org.apache.spark.{Partition, SparkContext, TaskContext}
+import org.apache.spark.SparkContext
 
 import java.io.{PrintWriter, StringWriter}
 import java.util.concurrent.CompletableFuture
@@ -26,62 +18,46 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
 
 /**
-  * Tarantool RDD implementation
+  * Tarantool RDD implementation for write operations
   *
   * @param sc spark context
   * @param space Tarantool space name
-  * @param conditions tuple filtering conditions
-  * @param tupleConverter converter from {@link TarantoolTuple} to type `R`
-  * @param readConfig read request configuration
+  * @param writeConfig write request configuration
   * @param ct class type tag
   * @tparam R target POJO type
   */
-class TarantoolRDD[R] private[spark] (
+class TarantoolWriteRDD[R] private[spark] (
   @transient val sc: SparkContext,
   val space: String,
-  val conditions: Conditions,
-  val tupleConverter: TupleConverter[R],
-  val readConfig: ReadConfig
+  val writeConfig: WriteConfig
 )(
-  implicit val ct: ClassTag[R],
+  implicit ct: ClassTag[R],
   implicit val messagePackMapper: MessagePackMapper =
     DefaultMessagePackMapperFactory.getInstance().defaultComplexTypesMapper()
-) extends RDD[R](sc, Seq.empty) {
+) extends TarantoolBaseRDD
+    with Serializable
+    with Logging {
 
-  private val globalConfig = TarantoolConfig(sparkContext.getConf)
+  private val globalConfig = TarantoolConfig(sc.getConf)
 
-  override def compute(split: Partition, context: TaskContext): Iterator[R] = {
-    val partition = split.asInstanceOf[TarantoolPartition]
-    val connection = TarantoolConnection()
-    context.addTaskCompletionListener {
-      new Function1[TaskContext, Unit] {
-        def apply(context: TaskContext) { connection.close() }
-      }
-    }
-
+  def isEmpty(
+    connection: TarantoolConnection[TarantoolTuple, TarantoolResult[TarantoolTuple]]
+  ): Boolean = {
     val client = connection.client(globalConfig)
-    createCursorIterator(client, partition)
+
+    client.space(space).select(Conditions.any().withLimit(1)).get().size() == 0
   }
 
-  private def createCursorIterator(
-    client: TarantoolClient[TarantoolTuple, TarantoolResult[TarantoolTuple]],
-    partition: TarantoolPartition
-  ): Iterator[R] = {
-    val tarantoolSpace = client.space(space)
-    // TODO add limit and offset to conditions based on partition information
-    TarantoolCursorIterator(tarantoolSpace.cursor(conditions, readConfig.batchSize))
-      .map(tupleConverter.convert)
-  }
-
-  override protected def getPartitions: Array[Partition] =
-    readConfig.partitioner.partitions(globalConfig.hosts, conditions).asInstanceOf[Array[Partition]]
+  def nonEmpty(
+    connection: TarantoolConnection[TarantoolTuple, TarantoolResult[TarantoolTuple]]
+  ): Boolean = !isEmpty(connection)
 
   def truncate(
     connection: TarantoolConnection[TarantoolTuple, TarantoolResult[TarantoolTuple]]
   ): Unit = {
     val client = connection.client(globalConfig)
 
-    client.space(space).truncate()
+    client.space(space).truncate().get()
   }
 
   def write(
@@ -162,30 +138,18 @@ class TarantoolRDD[R] private[spark] (
     )
 }
 
-object TarantoolRDD {
-
-  def apply[R](
-    sc: SparkContext,
-    readConfig: ReadConfig,
-    converter: TupleConverter[R]
-  )(
-    implicit
-    ct: ClassTag[R]
-  ): TarantoolRDD[R] =
-    new TarantoolRDD[R](sc, readConfig.spaceName, readConfig.conditions, converter, readConfig)
+object TarantoolWriteRDD {
 
   def apply(
     sc: SparkContext,
-    readConfig: ReadConfig
+    writeConfig: WriteConfig
   )(
     implicit
     ct: ClassTag[TarantoolTuple]
-  ): TarantoolRDD[TarantoolTuple] =
-    new TarantoolRDD[TarantoolTuple](
+  ): TarantoolWriteRDD[TarantoolTuple] =
+    new TarantoolWriteRDD[TarantoolTuple](
       sc,
-      readConfig.spaceName,
-      readConfig.conditions,
-      FunctionBasedTupleConverter(),
-      readConfig
+      writeConfig.spaceName,
+      writeConfig
     )
 }

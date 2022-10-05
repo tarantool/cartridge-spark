@@ -4,8 +4,8 @@ import io.tarantool.driver.api.conditions.Conditions;
 import io.tarantool.driver.api.tuple.TarantoolTuple;
 import io.tarantool.spark.connector.config.ReadConfig$;
 import io.tarantool.spark.connector.rdd.TarantoolJavaRDD;
-import io.tarantool.spark.connector.rdd.TarantoolRDD;
-import io.tarantool.spark.connector.rdd.TarantoolRDD$;
+import io.tarantool.spark.connector.rdd.TarantoolReadRDD;
+import io.tarantool.spark.connector.rdd.TarantoolReadRDD$;
 import io.tarantool.spark.connector.rdd.converter.FunctionBasedTupleConverterFactory;
 import io.tarantool.spark.connector.rdd.converter.TupleConverterFactory;
 import org.apache.spark.SparkContext;
@@ -30,14 +30,14 @@ public class SparkContextJavaFunctions {
     }
 
     /**
-     * Converts {@link TarantoolRDD} into {@link TarantoolJavaRDD}
+     * Converts {@link TarantoolReadRDD} into {@link TarantoolJavaRDD}
      *
-     * @param rdd         TarantoolRDD instance
+     * @param rdd         TarantoolReadRDD instance
      * @param targetClass target POJO class
      * @param <T>         target POJO type
      * @return TarantoolJavaRDD instance
      */
-    public <T> TarantoolJavaRDD<T> toJavaRDD(TarantoolRDD<T> rdd, Class<T> targetClass) {
+    public <T> TarantoolJavaRDD<T> toJavaRDD(TarantoolReadRDD<T> rdd, Class<T> targetClass) {
         return new TarantoolJavaRDD<>(rdd, targetClass);
     }
 
@@ -63,10 +63,10 @@ public class SparkContextJavaFunctions {
      *
      * @param spaceName  Tarantool space name
      * @param conditions space filtering conditions
-     * @return instance of {@link TarantoolRDD}
+     * @return instance of {@link TarantoolReadRDD}
      */
     public TarantoolJavaRDD<TarantoolTuple> tarantoolSpace(String spaceName, Conditions conditions) {
-        TarantoolRDD<TarantoolTuple> rdd = TarantoolRDD$.MODULE$.apply(
+        TarantoolReadRDD<TarantoolTuple> rdd = TarantoolReadRDD$.MODULE$.apply(
                 sparkContext,
                 ReadConfig$.MODULE$.apply(spaceName).withConditions(conditions),
                 getClassTag(TarantoolTuple.class));
@@ -83,11 +83,11 @@ public class SparkContextJavaFunctions {
      * @param conditions            space filtering conditions
      * @param tupleConverterFactory provides the converter of {@link TarantoolTuple} into the target entity type {@code R}
      * @param <R>                   target entity type
-     * @return instance of {@link TarantoolRDD}
+     * @return instance of {@link TarantoolReadRDD}
      */
     public <R> TarantoolJavaRDD<R> tarantoolSpace(String spaceName, Conditions conditions,
                                                   TupleConverterFactory<R> tupleConverterFactory) {
-        TarantoolRDD<R> rdd = TarantoolRDD$.MODULE$.apply(
+        TarantoolReadRDD<R> rdd = TarantoolReadRDD$.MODULE$.apply(
                 sparkContext,
                 ReadConfig$.MODULE$.apply(spaceName).withConditions(conditions),
                 tupleConverterFactory.tupleConverter(),

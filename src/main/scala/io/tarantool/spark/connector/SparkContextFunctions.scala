@@ -2,7 +2,7 @@ package io.tarantool.spark.connector
 
 import io.tarantool.driver.api.conditions.Conditions
 import io.tarantool.spark.connector.config.ReadConfig
-import io.tarantool.spark.connector.rdd.TarantoolRDD
+import io.tarantool.spark.connector.rdd.TarantoolReadRDD
 import io.tarantool.spark.connector.rdd.converter.TupleConverterFactory
 import org.apache.spark.SparkContext
 
@@ -38,7 +38,7 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Serializabl
     *
     * @param space        space name
     * @param conditions   filtering conditions
-    * @return {@link TarantoolRDD} with tuples from the space
+    * @return {@link TarantoolReadRDD} with tuples from the space
     */
   def tarantoolSpace[R](
     space: String,
@@ -49,8 +49,8 @@ class SparkContextFunctions(@transient val sc: SparkContext) extends Serializabl
     sparkContext: SparkContext = sc,
     readConfig: ReadConfig = ReadConfig(space).withConditions(conditions),
     tupleConverterFactory: TupleConverterFactory[R]
-  ): TarantoolRDD[R] =
-    TarantoolRDD(
+  ): TarantoolReadRDD[R] =
+    TarantoolReadRDD(
       sparkContext,
       readConfig,
       tupleConverterFactory.tupleConverter()
