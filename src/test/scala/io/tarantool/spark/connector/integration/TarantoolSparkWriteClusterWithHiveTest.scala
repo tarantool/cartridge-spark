@@ -5,9 +5,12 @@ import io.tarantool.spark.connector.toSparkContextFunctions
 import org.apache.spark.sql.SaveMode
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.prop.TableDrivenPropertyChecks._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.Tag
 import org.scalatest.Suite
+
+import java.math.MathContext
 
 /**
   * @author Alexey Kuzin
@@ -28,68 +31,86 @@ class TarantoolSparkWriteClusterWithHiveTest
     SharedSparkContext.teardownSpark()
   }
 
+  private def generateDecimalRational(i: Integer): String =
+    String.valueOf(10855296 + i) + "00000.134526900004130000"
+
+  private def generateDecimalInteger(i: Integer): String =
+    "40450" + String.valueOf(30147 + i) + "00028"
+
+  private def generateRows(): String =
+    Range(0, 100)
+      .map(i => s"|(null, ${generateDecimalRational(i)}, ${generateDecimalInteger(i)})")
+      .mkString(",\n")
+
+  val variants =
+    Table(
+      ("stopOnError", "batchSize"),
+      (false, 9),
+      (false, 10),
+      (false, 100),
+      (false, 101),
+      (true, 9),
+      (true, 10),
+      (true, 100),
+      (true, 101)
+    )
+
   test("should write a Dataset to the space with decimal values", DecimalTestTag) {
-    val space = "reg_numbers"
+    forAll(variants) { (stopOnError, batchSize) =>
+      val space = "reg_numbers"
 
-    SharedSparkContext.spark.sql("create database if not exists dl_raw")
-    SharedSparkContext.spark.sql("drop table if exists DL_RAW.reg_numbers")
+      SharedSparkContext.spark.sql("create database if not exists dl_raw")
+      SharedSparkContext.spark.sql("drop table if exists DL_RAW.reg_numbers")
 
-    SharedSparkContext.spark.sql("""
-                                   |create table if not exists DL_RAW.reg_numbers (
-                                   |     bucket_id             integer 
-                                   |    ,idreg                 decimal(38,18) 
-                                   |    ,regnum                decimal(38) 
-                                   |  ) stored as orc""".stripMargin)
-    SharedSparkContext.spark.sql("""
-                                   |insert into dl_raw.reg_numbers values 
-                                   |(null, 1085529600000.13452690000413, 404503014700028), 
-                                   |(null, 1086629600000.13452690000413, 404503015800028), 
-                                   |(null, 1087430400000.13452690000413, 304503016900085) 
-                                   |""".stripMargin)
+      SharedSparkContext.spark.sql("""
+                                     |create table if not exists DL_RAW.reg_numbers (
+                                     |     bucket_id             integer 
+                                     |    ,idreg                 decimal(38,18) 
+                                     |    ,regnum                decimal(38) 
+                                     |  ) stored as orc""".stripMargin)
+      SharedSparkContext.spark.sql(s"""
+                                      |insert into dl_raw.reg_numbers values 
+                                       ${generateRows}
+                                      |""".stripMargin)
 
-    val ds = SharedSparkContext.spark.table("dl_raw.reg_numbers")
+      val ds = SharedSparkContext.spark.table("dl_raw.reg_numbers")
 
-    ds.show(false)
-    ds.printSchema()
+      ds.printSchema()
 
-    ds.write
-      .format("org.apache.spark.sql.tarantool")
-      .option("tarantool.space", space)
-      .mode(SaveMode.Overwrite)
-      .save()
+      ds.write
+        .format("org.apache.spark.sql.tarantool")
+        .option("tarantool.space", space)
+        .option("tarantool.stopOnError", stopOnError)
+        .option("tarantool.batchSize", batchSize)
+        .mode(SaveMode.Overwrite)
+        .save()
 
-    val actual =
-      SharedSparkContext.spark.sparkContext.tarantoolSpace(space, Conditions.any()).collect()
-    actual.length should equal(3)
+      val actual =
+        SharedSparkContext.spark.sparkContext.tarantoolSpace(space, Conditions.any()).collect()
+      actual.length should equal(100)
 
-    actual(0).getDecimal("idreg") should equal(
-      BigDecimal("1085529600000.134526900004130000").bigDecimal
-    )
-    actual(0).getDecimal("regnum") should equal(BigDecimal("404503014700028").bigDecimal)
+      for (i <- 0 until 100) {
+        val tuple = actual(i)
+        tuple.getDecimal("idreg") should equal(
+          BigDecimal(generateDecimalRational(i)).bigDecimal
+        )
+        tuple.getDecimal("regnum") should equal(BigDecimal(generateDecimalInteger(i)).bigDecimal)
+      }
 
-    actual(1).getDecimal("idreg") should equal(
-      BigDecimal("1086629600000.134526900004130000").bigDecimal
-    )
-    actual(1).getDecimal("regnum") should equal(BigDecimal("404503015800028").bigDecimal)
+      val df = SharedSparkContext.spark.read
+        .format("org.apache.spark.sql.tarantool")
+        .option("tarantool.space", space)
+        .load()
 
-    actual(2).getDecimal("idreg") should equal(
-      BigDecimal("1087430400000.134526900004130000").bigDecimal
-    )
-    actual(2).getDecimal("regnum") should equal(BigDecimal("304503016900085").bigDecimal)
-
-    val df = SharedSparkContext.spark.read
-      .format("org.apache.spark.sql.tarantool")
-      .option("tarantool.space", space)
-      .load()
-
-    df.count() > 0 should equal(true)
-    df.select("regnum").rdd.map(row => row.get(0)).collect() should equal(
-      Array(
-        BigDecimal("404503014700028.000000000000000000").bigDecimal,
-        BigDecimal("404503015800028.000000000000000000").bigDecimal,
-        BigDecimal("304503016900085.000000000000000000").bigDecimal
-      )
-    )
+      df.count() should equal(100)
+      var count = 0
+      df.select("regnum").rdd.map(row => row.get(0)).collect().foreach { row =>
+        row should equal(
+          BigDecimal(generateDecimalInteger(count) + ".000000000000000000", MathContext.DECIMAL128).bigDecimal
+        )
+        count += 1
+      }
+    }
   }
 }
 

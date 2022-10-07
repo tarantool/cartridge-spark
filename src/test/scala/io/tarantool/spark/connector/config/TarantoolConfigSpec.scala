@@ -14,9 +14,16 @@ class TarantoolConfigSpec extends AnyFlatSpec with Matchers {
     val sparkConf = new SparkConf()
 
     val rConf: ReadConfig = ReadConfig("test_space")
+    rConf.spaceName should equal("test_space")
     rConf.conditions should equal(Conditions.any())
     rConf.partitioner should not be None
     rConf.batchSize should equal(1000)
+
+    val wConf: WriteConfig = WriteConfig("test_space")
+    wConf.spaceName should equal("test_space")
+    wConf.batchSize should equal(1000)
+    wConf.stopOnError should equal(true)
+    wConf.rollbackOnError should equal(true)
 
     val tConf: TarantoolConfig = TarantoolConfig(sparkConf)
 
