@@ -17,10 +17,7 @@ import scala.collection.JavaConverters.seqAsJavaListConverter
   * @author Alexey Kuzin
   */
 @org.scalatest.DoNotDiscover
-class TarantoolSparkReadClusterTest
-    extends AnyFunSuite
-    with Matchers
-    with TarantoolSparkClusterTestSuite {
+class TarantoolSparkReadClusterTest extends AnyFunSuite with Matchers with TarantoolSparkClusterTestSuite {
 
   //space format:
   // s = box.schema.space.create('_spark_test_space')

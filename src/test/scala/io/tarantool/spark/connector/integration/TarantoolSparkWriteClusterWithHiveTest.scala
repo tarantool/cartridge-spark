@@ -16,10 +16,7 @@ import java.math.MathContext
   * @author Alexey Kuzin
   */
 @org.scalatest.DoNotDiscover
-class TarantoolSparkWriteClusterWithHiveTest
-    extends AnyFunSuite
-    with Matchers
-    with BeforeAndAfterEach { this: Suite =>
+class TarantoolSparkWriteClusterWithHiveTest extends AnyFunSuite with Matchers with BeforeAndAfterEach { this: Suite =>
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

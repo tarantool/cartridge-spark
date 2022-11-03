@@ -51,10 +51,12 @@ libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.4.0"
 
 ### Dataset API request options
 
-| property-key                            | description                                    | default value   |
-| --------------------------------------- | -----------------------------------------------| --------------- |
-| tarantool.space                         | Tarantool space name                           |                 |
-| tarantool.batchSize                     | limit of records to be read or written at once | 1000            |
+| property-key              | description                                                                                        | default value |
+|---------------------------|----------------------------------------------------------------------------------------------------|---------------|
+| tarantool.space           | Tarantool space name                                                                               |               |
+| tarantool.batchSize       | limit of records to be read or written at once                                                     | 1000          |
+| tarantool.stopOnError     | stop writing immediately after a batch fails with an exception or not all tuples are written       | true          |
+| tarantool.rollbackOnError | rollback all changes written in scope of the last batch to a replicaset where an exception occured | true          |
 
 #### Example
 
@@ -177,12 +179,25 @@ or Java:
 Consult with the following table about what will happen when a DataSet is written with different modes.
 In all modes it is supposed that all the spaces used in an operation exist. An error will be produced otherwise. 
 
-| Mode          | How it works                                                                                       |
-|---------------|----------------------------------------------------------------------------------------------------|
-| Append        | If a record with the given primary key exists, it will be replaced, and inserted otherwise.        |
-| Overwrite     | The space will be truncated before writing the DataSet, and then the records will be inserted.     |
-| ErrorIfExists | If the space is not empty, an error will be produced; otherwise, the records will be inserted.     |
-| Ignore        | If the space is not empty, no records will be inserted an no errors will be produced.              |
+| Mode          | How it works                                                                                   |
+|---------------|------------------------------------------------------------------------------------------------|
+| Append        | If a record with the given primary key exists, it will be replaced, and inserted otherwise.    |
+| Overwrite     | The space will be truncated before writing the DataSet, and then the records will be inserted. |
+| ErrorIfExists | If the space is not empty, an error will be produced; otherwise, the records will be inserted. |
+| Ignore        | If the space is not empty, no records will be insertedd an no errors will be produced.         |
+
+## Batch writing modes
+
+Batch operations are supported for more efficient writing of data into the Tarantool cluster. They are enabled by default,
+but the error handling differs depending on values of the options `rollbackOnError` and `stopOnError`. The first option
+is simply propagated to the [tarantool/crud](https://github.com/tarantool/crud) library methods and currently
+only allows rolling back last batch of changes on a single replicaset when an exception has occurred with a tuple from
+this replicaset. The data successfully written to other replicasets in scope of the failed batch, and the data written
+in the previous batches will remain in place. The second option is also propagated to the `tarantool/crud` library.
+If it is set to `false`, the writing of batches will continue even in the case of errors. The list of errors will be
+returned when all data are attempted to be written to the cluster. This variant may be useful for the `Append`
+write mode only. If the `stopOnError` value is `true` (default), the batch writing will stop on the next batch after
+a batch fails with an exception or not all tuples in the last batch were written.
 
 ## Learn more
 

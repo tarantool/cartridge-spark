@@ -18,8 +18,7 @@ case class TarantoolPartition(
   override def hashCode(): Int = super.hashCode()
 
   override def equals(other: Any): Boolean = other match {
-    case p: TarantoolPartition
-        if index.equals(p.index) && conditions.equals(p.conditions) && nodes.equals(p.nodes) =>
+    case p: TarantoolPartition if index.equals(p.index) && conditions.equals(p.conditions) && nodes.equals(p.nodes) =>
       true
     case _ => false
   }

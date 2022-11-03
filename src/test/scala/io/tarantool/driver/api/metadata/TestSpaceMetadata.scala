@@ -49,8 +49,7 @@ object TestTarantoolMetadata {
   }
 }
 
-case class TestSpaceMetadata(fieldMetadata: Map[String, TarantoolFieldMetadata])
-    extends TarantoolSpaceMetadata {
+case class TestSpaceMetadata(fieldMetadata: Map[String, TarantoolFieldMetadata]) extends TarantoolSpaceMetadata {
   override def getSpaceId: Int = 0
 
   override def getOwnerId: Int = 0

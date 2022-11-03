@@ -107,9 +107,7 @@ class TarantoolWriteRDD[R] private[spark] (
                 .insertMany(JavaConverters.seqAsJavaListConverter(tuples.toList).asJava, options)
         }
 
-        val tupleStream: Iterator[TarantoolTuple] = partition.map { row =>
-          rowToTuple(tupleFactory, row)
-        }
+        val tupleStream: Iterator[TarantoolTuple] = partition.map(row => rowToTuple(tupleFactory, row))
 
         if (writeConfig.stopOnError) {
           writeSync(tupleStream, operation)
@@ -148,8 +146,8 @@ class TarantoolWriteRDD[R] private[spark] (
                   })
               }
               val future = if (parentFuture.isDefined) {
-                Some(parentFuture.get.thenCompose(toJavaFunction {
-                  previousResult: TarantoolResult[TarantoolTuple] => nextFuture()
+                Some(parentFuture.get.thenCompose(toJavaFunction { previousResult: TarantoolResult[TarantoolTuple] =>
+                  nextFuture()
                 }))
               } else {
                 Some(nextFuture())
@@ -177,9 +175,7 @@ class TarantoolWriteRDD[R] private[spark] (
       }
       future = Some(future match {
         case Some(future) =>
-          future.thenCompose(toJavaFunction { previousResult: TarantoolResult[TarantoolTuple] =>
-            nextFuture()
-          })
+          future.thenCompose(toJavaFunction { previousResult: TarantoolResult[TarantoolTuple] => nextFuture() })
         case None => nextFuture()
       })
     }

@@ -4,8 +4,7 @@ import io.tarantool.driver.api.{TarantoolClusterAddressProvider, TarantoolServer
 
 import java.util
 
-class StaticClusterAddressProvider(addresses: Seq[TarantoolServerAddress])
-    extends TarantoolClusterAddressProvider {
+class StaticClusterAddressProvider(addresses: Seq[TarantoolServerAddress]) extends TarantoolClusterAddressProvider {
 
   override def getAddresses: util.Collection[TarantoolServerAddress] =
     scala.collection.JavaConverters.seqAsJavaListConverter(addresses).asJava

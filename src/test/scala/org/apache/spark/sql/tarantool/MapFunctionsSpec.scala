@@ -1,10 +1,6 @@
 package org.apache.spark.sql.tarantool
 
-import io.tarantool.driver.api.metadata.{
-  TestSpaceMetadata,
-  TestSpaceWithArrayMetadata,
-  TestSpaceWithMapMetadata
-}
+import io.tarantool.driver.api.metadata.{TestSpaceMetadata, TestSpaceWithArrayMetadata, TestSpaceWithMapMetadata}
 import io.tarantool.driver.api.tuple.DefaultTarantoolTupleFactory
 import io.tarantool.driver.core.tuple.TarantoolTupleImpl
 import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory
@@ -15,11 +11,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
-import scala.collection.JavaConverters.{
-  iterableAsScalaIterableConverter,
-  mapAsJavaMapConverter,
-  seqAsJavaListConverter
-}
+import scala.collection.JavaConverters.{iterableAsScalaIterableConverter, mapAsJavaMapConverter, seqAsJavaListConverter}
 
 /**
   *
