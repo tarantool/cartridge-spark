@@ -107,7 +107,8 @@ class TarantoolWriteRDD[R] private[spark] (
                 .insertMany(JavaConverters.seqAsJavaListConverter(tuples.toList).asJava, options)
         }
 
-        val tupleStream: Iterator[TarantoolTuple] = partition.map(row => rowToTuple(tupleFactory, row))
+        val tupleStream: Iterator[TarantoolTuple] =
+          partition.map(row => rowToTuple(tupleFactory, row, writeConfig.transformFieldNames))
 
         if (writeConfig.stopOnError) {
           writeSync(tupleStream, operation)

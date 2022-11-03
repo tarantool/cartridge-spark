@@ -5,6 +5,7 @@ import io.tarantool.driver.mappers.MessagePackValueMapper
 import io.tarantool.spark.connector.util.StringUtils
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.sql.tarantool.FieldNameTransformations.FieldNameTransformation
 import org.apache.spark.sql.types._
 
 import java.lang.{
@@ -92,22 +93,26 @@ object MapFunctions {
         classOf[java.util.List[valueClass.type]]
     }
 
-  def rowToTuple(tupleFactory: TarantoolTupleFactory, row: Row): TarantoolTuple =
+  def rowToTuple(tupleFactory: TarantoolTupleFactory, row: Row, transform: FieldNameTransformation): TarantoolTuple =
     Option(row.schema) match {
-      case Some(schema) => rowWithSchemaToTuple(tupleFactory, row)
+      case Some(schema) => rowWithSchemaToTuple(tupleFactory, row, transform)
       case None         => rowWithoutSchemaToTuple(tupleFactory, row)
     }
 
-  def rowWithSchemaToTuple(tupleFactory: TarantoolTupleFactory, row: Row): TarantoolTuple = {
+  def rowWithSchemaToTuple(
+    tupleFactory: TarantoolTupleFactory,
+    row: Row,
+    transform: FieldNameTransformation
+  ): TarantoolTuple = {
     val tuple = tupleFactory.create()
     row.getValuesMap[Any](row.schema.fieldNames).foreach { (pair) =>
-      tuple.putObject(transformSchemaFieldName(pair._1), mapToJavaValue(Option(pair._2)).orNull)
+      tuple.putObject(transformSchemaFieldName(pair._1, transform), mapToJavaValue(Option(pair._2)).orNull)
     }
     tuple
   }
 
-  def transformSchemaFieldName(fieldName: String): String =
-    tupleNamesCache.getOrElseUpdate(fieldName, StringUtils.camelToSnake(fieldName))
+  def transformSchemaFieldName(fieldName: String, transform: FieldNameTransformation): String =
+    tupleNamesCache.getOrElseUpdate(fieldName, transform(fieldName))
 
   def rowWithoutSchemaToTuple(tupleFactory: TarantoolTupleFactory, row: Row): TarantoolTuple = {
     val tuple = tupleFactory.create(

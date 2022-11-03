@@ -38,28 +38,29 @@ libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.4.0"
 
 ### Configuration properties
 
-| property-key                  | description                                                                                     | default value  |
-|-------------------------------|-------------------------------------------------------------------------------------------------|----------------|
-| tarantool.hosts               | comma separated list of Tarantool hosts                                                         | 127.0.0.1:3301 |
-| tarantool.username            | basic authentication user                                                                       | guest          |
-| tarantool.password            | basic authentication password                                                                   |                |
-| tarantool.connectTimeout      | server connect timeout, in milliseconds                                                         | 1000           |
-| tarantool.readTimeout         | socket read timeout, in milliseconds                                                            | 1000           |
-| tarantool.requestTimeout      | request completion timeout, in milliseconds                                                     | 2000           |
-| tarantool.connections         | number of connections established with each host                                                | 1              |
-| tarantool.cursorBatchSize     | default limit for prefetching tuples in RDD iterator                                            | 1000           |
-| tarantool.retries.errorType   | configures automatic retry of requests to Tarantool cluster. Possible values: "network", "none" | none           |
-| tarantool.retries.maxAttempts | maximum number of retry attempts for each request. Mandatory if errorType set to "network"      |                |
-| tarantool.retries.delay       | delay between subsequent retries of each request. Mandatory if errorType set to "network"       |                |
+| property-key                  | description                                                                                                    | default value  |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------|----------------|
+| tarantool.hosts               | comma separated list of Tarantool hosts                                                                        | 127.0.0.1:3301 |
+| tarantool.username            | basic authentication user                                                                                      | guest          |
+| tarantool.password            | basic authentication password                                                                                  |                |
+| tarantool.connectTimeout      | server connect timeout, in milliseconds                                                                        | 1000           |
+| tarantool.readTimeout         | socket read timeout, in milliseconds                                                                           | 1000           |
+| tarantool.requestTimeout      | request completion timeout, in milliseconds                                                                    | 2000           |
+| tarantool.connections         | number of connections established with each host                                                               | 1              |
+| tarantool.cursorBatchSize     | default limit for prefetching tuples in RDD iterator                                                           | 1000           |
+| tarantool.retries.errorType   | configures automatic retry of requests to Tarantool cluster. Possible values: "network", "none"                | none           |
+| tarantool.retries.maxAttempts | maximum number of retry attempts for each request. Mandatory if errorType is set to "network"                  |                |
+| tarantool.retries.delay       | delay between subsequent retries of each request (in milliseconds). Mandatory if errorType is set to "network" |                |
 
 ### Dataset API request options
 
-| property-key              | description                                                                                        | default value |
-|---------------------------|----------------------------------------------------------------------------------------------------|---------------|
-| tarantool.space           | Tarantool space name                                                                               |               |
-| tarantool.batchSize       | limit of records to be read or written at once                                                     | 1000          |
-| tarantool.stopOnError     | stop writing immediately after a batch fails with an exception or not all tuples are written       | true          |
-| tarantool.rollbackOnError | rollback all changes written in scope of the last batch to a replicaset where an exception occured | true          |
+| property-key                  | description                                                                                                                                                                                    | default value |
+|-------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
+| tarantool.space               | Tarantool space name. Mandatory option                                                                                                                                                         |               |
+| tarantool.batchSize           | limit of records to be read or written at once                                                                                                                                                 | 1000          |
+| tarantool.stopOnError         | stop writing immediately after a batch fails with an exception or not all tuples are written                                                                                                   | true          |
+| tarantool.rollbackOnError     | rollback all changes written in scope of the last batch to a replicaset where an exception occurred                                                                                            | true          |
+| tarantool.transformFieldNames | possible values: none (default), snake_case, lower_case, upper_case. Necessary if the field names in datasets built from Spark SQL queries does not correspond to the field names in Tarantool | none          |
 
 #### Example
 
