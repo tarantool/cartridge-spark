@@ -2,16 +2,13 @@ package io.tarantool.spark.connector.integration
 
 import io.tarantool.driver.api.conditions.Conditions
 import io.tarantool.driver.api.tuple.{DefaultTarantoolTupleFactory, TarantoolTuple}
-import io.tarantool.driver.exceptions.TarantoolException
 import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory
-import io.tarantool.spark.connector.connection.TarantoolConnection
-import io.tarantool.spark.connector.config.TarantoolConfig
 import io.tarantool.spark.connector.toSparkContextFunctions
 import org.apache.spark.SparkException
 import org.apache.spark.sql.{Encoders, Row, SaveMode}
+import org.scalatest.Tag
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.Tag
 
 import java.util
 import java.util.concurrent.ThreadLocalRandom
@@ -21,10 +18,7 @@ import scala.collection.JavaConverters.{mapAsJavaMapConverter, seqAsJavaListConv
   * @author Alexey Kuzin
   */
 @org.scalatest.DoNotDiscover
-class TarantoolSparkWriteClusterTest
-    extends AnyFunSuite
-    with Matchers
-    with TarantoolSparkClusterTestSuite {
+class TarantoolSparkWriteClusterTest extends AnyFunSuite with Matchers with TarantoolSparkClusterTestSuite {
 
   private val SPACE_NAME: String = "orders"
 
@@ -93,8 +87,7 @@ class TarantoolSparkWriteClusterTest
       .option("tarantool.space", SPACE_NAME)
       .save()
 
-    actual =
-      SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual = SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
     actual.length should equal(current)
 
     actual.foreach(item => item.getString("order_type") should endWith("222"))
@@ -115,8 +108,7 @@ class TarantoolSparkWriteClusterTest
       .option("tarantool.space", SPACE_NAME)
       .save()
 
-    actual =
-      SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual = SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
     actual.length should equal(current)
 
     actual.foreach(item => item.getString("order_type") should endWith("333"))
@@ -149,8 +141,7 @@ class TarantoolSparkWriteClusterTest
       .option("tarantool.space", SPACE_NAME)
       .save()
 
-    actual =
-      SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual = SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
     actual.length should equal(current)
 
     actual.foreach(item => item.getString("order_type") should endWith("444"))
@@ -171,8 +162,7 @@ class TarantoolSparkWriteClusterTest
       .option("tarantool.space", SPACE_NAME)
       .save()
 
-    actual =
-      SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual = SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
     actual.length should equal(current)
 
     actual.foreach(item => item.getString("order_type") should endWith("444"))
@@ -186,8 +176,7 @@ class TarantoolSparkWriteClusterTest
       .option("tarantool.space", SPACE_NAME)
       .save()
 
-    actual =
-      SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
+    actual = SharedSparkContext.spark.sparkContext.tarantoolSpace(SPACE_NAME, Conditions.any()).collect()
     actual.length should equal(current)
 
     actual.foreach(item => item.getString("order_type") should endWith("555"))
@@ -196,6 +185,9 @@ class TarantoolSparkWriteClusterTest
   test("should write a Dataset to the space with field names mapping") {
     val space = "test_space"
 
+    // NOTE! The following query actually creates 3 separate RDDs, each containing one row.
+    // The last row duplicate will not be removed.
+    // This is NOT a normal way of writing data into Spark!
     var ds = SharedSparkContext.spark.sql(
       """
         |select 1 as id, null as bucketId, 'Don Quixote' as bookName, 'Miguel de Cervantes' as author, 1605 as year union all
@@ -247,6 +239,94 @@ class TarantoolSparkWriteClusterTest
     actual(2).getString("book_name") should equal("War and Peace")
     actual(2).getInteger("year") should equal(1869)
     actual(2).getString("unique_key") should equal("lolkek2")
+  }
+
+  test(
+    "should fail fast and drop records if one batch failed when stopOnError is true",
+    testTags = WriteTestTag
+  ) {
+    val spark = SharedSparkContext.spark
+    import spark.implicits._
+
+    val space = "test_space"
+
+    val ds = Seq(
+      BookWithKey(Some(1), Option.empty[Integer], "Miguel de Cervantes", 1605, "Don Quixote", "lolkek"),
+      BookWithKey(Option.empty[Integer], Option.empty[Integer], "Miguel de Cervantes", 1605, "Don Quixote", "lolkek"),
+      BookWithKey(
+        Some(3),
+        Option.empty[Integer],
+        "F. Scott Fitzgerald",
+        1925,
+        "The Great Gatsby",
+        "lolkek1"
+      )
+    ).toDS
+
+    intercept[SparkException] {
+      ds.write
+        .format("org.apache.spark.sql.tarantool")
+        .mode(SaveMode.Overwrite)
+        .option("tarantool.space", space)
+        .option("tarantool.stopOnError", true)
+        .option("tarantool.rollbackOnError", true)
+        .option("tarantool.batchSize", 2)
+        .save()
+    }
+
+    val actual = spark.sparkContext.tarantoolSpace(space, Conditions.any()).collect()
+    actual.length should equal(1) // only one tuple from the first batch should be successful
+
+    actual(0).getString("author") should equal("Miguel de Cervantes")
+    actual(0).getString("book_name") should equal("Don Quixote")
+    actual(0).getInteger("year") should equal(1605)
+    actual(0).getString("unique_key") should equal("lolkek")
+  }
+
+  test(
+    "should not fail fast if one batch failed when stopOnError is false",
+    testTags = WriteTestTag
+  ) {
+    val spark = SharedSparkContext.spark
+    import spark.implicits._
+
+    val space = "test_space"
+
+    val ds = Seq(
+      BookWithKey(Some(1), Option.empty[Integer], "Miguel de Cervantes", 1605, "Don Quixote", "lolkek"),
+      BookWithKey(Option.empty[Integer], Option.empty[Integer], "Miguel de Cervantes", 1605, "Don Quixote", "lolkek"),
+      BookWithKey(
+        Some(3),
+        Option.empty[Integer],
+        "F. Scott Fitzgerald",
+        1925,
+        "The Great Gatsby",
+        "lolkek1"
+      )
+    ).toDS
+
+    intercept[SparkException] {
+      ds.write
+        .format("org.apache.spark.sql.tarantool")
+        .mode(SaveMode.Overwrite)
+        .option("tarantool.space", space)
+        .option("tarantool.stopOnError", false)
+        .option("tarantool.batchSize", 1)
+        .save()
+    }
+
+    val actual = spark.sparkContext.tarantoolSpace(space, Conditions.any()).collect()
+    actual.length should equal(2)
+
+    actual(0).getString("author") should equal("Miguel de Cervantes")
+    actual(0).getString("book_name") should equal("Don Quixote")
+    actual(0).getInteger("year") should equal(1605)
+    actual(0).getString("unique_key") should equal("lolkek")
+
+    actual(1).getString("author") should equal("F. Scott Fitzgerald")
+    actual(1).getString("book_name") should equal("The Great Gatsby")
+    actual(1).getInteger("year") should equal(1925)
+    actual(1).getString("unique_key") should equal("lolkek1")
   }
 
   test("should throw an exception if the space name is not specified") {
@@ -320,3 +400,14 @@ object Order {
       cleared = true
     )
 }
+
+case class BookWithKey(
+  id: Option[Integer],
+  bucketId: Option[Integer],
+  author: String,
+  year: Integer,
+  bookName: String,
+  uniqueKey: String
+)
+
+object WriteTestTag extends Tag("io.tarantool.spark.integration.WriteTest")

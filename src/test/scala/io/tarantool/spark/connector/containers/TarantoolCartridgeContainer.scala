@@ -3,9 +3,7 @@ package io.tarantool.spark.connector.containers
 import com.dimafeng.testcontainers.{ContainerDef, SingleContainer}
 import org.slf4j.{Logger, LoggerFactory}
 import org.testcontainers.containers.output.Slf4jLogConsumer
-import org.testcontainers.containers.{
-  TarantoolCartridgeContainer => JavaTarantoolCartridgeContainer
-}
+import org.testcontainers.containers.{TarantoolCartridgeContainer => JavaTarantoolCartridgeContainer}
 import org.testcontainers.containers.wait.strategy.Wait
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
@@ -73,8 +71,7 @@ object TarantoolCartridgeContainer {
   case class Def(
     dockerFile: String = TarantoolCartridgeContainer.defaultDockerFile,
     instancesFile: String = TarantoolCartridgeContainer.defaultInstancesFile,
-    topologyConfigurationFile: String =
-      TarantoolCartridgeContainer.defaultTopologyConfigurationFile,
+    topologyConfigurationFile: String = TarantoolCartridgeContainer.defaultTopologyConfigurationFile,
     instanceDir: String = TarantoolCartridgeContainer.defaultInstanceDir,
     directoryBinding: String = TarantoolCartridgeContainer.defaultDirectoryBinding,
     routerHost: String = TarantoolCartridgeContainer.defaultRouterHost,

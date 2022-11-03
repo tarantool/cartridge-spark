@@ -9,10 +9,7 @@ import org.scalatest.matchers.should.Matchers
   * @author Alexey Kuzin
   */
 @org.scalatest.DoNotDiscover
-class TarantoolConnectionSpec
-    extends AnyFlatSpec
-    with Matchers
-    with TarantoolSparkClusterTestSuite {
+class TarantoolConnectionSpec extends AnyFlatSpec with Matchers with TarantoolSparkClusterTestSuite {
 
   "Client in TarantoolConnection" should " be initialized only once" in {
     val conn1 = TarantoolConnection()

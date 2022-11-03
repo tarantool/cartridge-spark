@@ -1,12 +1,7 @@
 package io.tarantool.spark.connector.connection
 
 import io.tarantool.driver.api.tuple.TarantoolTuple
-import io.tarantool.driver.api.{
-  TarantoolClient,
-  TarantoolClientConfig,
-  TarantoolResult,
-  TarantoolServerAddress
-}
+import io.tarantool.driver.api.{TarantoolClient, TarantoolClientConfig, TarantoolResult, TarantoolServerAddress}
 import io.tarantool.driver.auth.SimpleTarantoolCredentials
 import io.tarantool.driver.api.TarantoolClientFactory
 import io.tarantool.driver.core.{ClusterTarantoolTupleClient, ProxyTarantoolTupleClient}

@@ -5,8 +5,7 @@ import org.apache.spark.SparkConf
 
 case class Credentials(username: String, password: String) extends Serializable
 
-case class Timeouts(connect: Option[Int], read: Option[Int], request: Option[Int])
-    extends Serializable
+case class Timeouts(connect: Option[Int], read: Option[Int], request: Option[Int]) extends Serializable
 
 case class TarantoolConfig(
   hosts: Seq[TarantoolServerAddress],
