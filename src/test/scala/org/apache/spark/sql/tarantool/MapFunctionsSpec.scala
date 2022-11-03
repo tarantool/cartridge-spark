@@ -152,7 +152,7 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
 
   it should "convert an empty row to an empty tuple" in {
     val row = Row()
-    val tuple = MapFunctions.rowToTuple(tupleFactory, row)
+    val tuple = MapFunctions.rowToTuple(tupleFactory, row, FieldNameTransformations.SNAKE_CASE)
 
     tuple should not be null
     tuple.size should equal(0)
@@ -173,7 +173,7 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
       time
     )
 
-    val tuple = MapFunctions.rowToTuple(tupleFactory, row)
+    val tuple = MapFunctions.rowToTuple(tupleFactory, row, FieldNameTransformations.SNAKE_CASE)
 
     val expected = new TarantoolTupleImpl(
       Seq(
@@ -208,7 +208,7 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
       time
     )
 
-    val tuple = MapFunctions.rowToTuple(tupleFactory, row)
+    val tuple = MapFunctions.rowToTuple(tupleFactory, row, FieldNameTransformations.SNAKE_CASE)
     val expected = new TarantoolTupleImpl(
       Seq(
         null,
@@ -235,7 +235,7 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
       time
     )
 
-    val tuple = MapFunctions.rowToTuple(tupleFactory, row)
+    val tuple = MapFunctions.rowToTuple(tupleFactory, row, FieldNameTransformations.NONE)
     val expected = new TarantoolTupleImpl(
       Seq(
         null,
