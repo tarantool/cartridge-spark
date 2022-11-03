@@ -4,7 +4,8 @@ import java.util.function.{
   BiFunction => JBiFunction,
   Consumer => JConsumer,
   Function => JFunction,
-  Supplier => JSupplier
+  Supplier => JSupplier,
+  UnaryOperator => JUnaryOperator
 }
 import scala.reflect.ClassTag
 
@@ -30,6 +31,13 @@ object ScalaToJavaHelper {
     */
   def toJavaFunction[T1, R](f: T1 => R): JFunction[T1, R] = new JFunction[T1, R] {
     override def apply(t: T1): R = f.apply(t)
+  }
+
+  /**
+    * Converts a Scala {@link Function1} to a Java {@link java.util.function.UnaryOperator}
+    */
+  def toJavaUnaryOperator[R](f: R => R): JUnaryOperator[R] = new JUnaryOperator[R] {
+    override def apply(t: R): R = f.apply(t)
   }
 
   /**

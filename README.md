@@ -38,16 +38,19 @@ libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.4.0"
 
 ### Configuration properties
 
-| property-key                            | description                                          | default value   |
-| --------------------------------------- | ---------------------------------------------------- | --------------- |
-| tarantool.hosts                         | comma separated list of Tarantool hosts              | 127.0.0.1:3301  |
-| tarantool.username                      | basic authentication user                            | guest           |
-| tarantool.password                      | basic authentication password                        |                 |
-| tarantool.connectTimeout                | server connect timeout, in milliseconds              | 1000            |
-| tarantool.readTimeout                   | socket read timeout, in milliseconds                 | 1000            |
-| tarantool.requestTimeout                | request completion timeout, in milliseconds          | 2000            |
-| tarantool.connections                   | number of connections established with each host     | 1               |
-| tarantool.cursorBatchSize               | default limit for prefetching tuples in RDD iterator | 1000            |
+| property-key                  | description                                                                                     | default value  |
+|-------------------------------|-------------------------------------------------------------------------------------------------|----------------|
+| tarantool.hosts               | comma separated list of Tarantool hosts                                                         | 127.0.0.1:3301 |
+| tarantool.username            | basic authentication user                                                                       | guest          |
+| tarantool.password            | basic authentication password                                                                   |                |
+| tarantool.connectTimeout      | server connect timeout, in milliseconds                                                         | 1000           |
+| tarantool.readTimeout         | socket read timeout, in milliseconds                                                            | 1000           |
+| tarantool.requestTimeout      | request completion timeout, in milliseconds                                                     | 2000           |
+| tarantool.connections         | number of connections established with each host                                                | 1              |
+| tarantool.cursorBatchSize     | default limit for prefetching tuples in RDD iterator                                            | 1000           |
+| tarantool.retries.errorType   | configures automatic retry of requests to Tarantool cluster. Possible values: "network", "none" | none           |
+| tarantool.retries.maxAttempts | maximum number of retry attempts for each request. Mandatory if errorType set to "network"      |                |
+| tarantool.retries.delay       | delay between subsequent retries of each request. Mandatory if errorType set to "network"       |                |
 
 ### Dataset API request options
 

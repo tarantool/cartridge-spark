@@ -1,5 +1,6 @@
 package io.tarantool.spark.connector.integration
 
+import io.tarantool.driver.core.RetryingTarantoolTupleClient
 import io.tarantool.spark.connector.config.TarantoolConfig
 import io.tarantool.spark.connector.connection.TarantoolConnection
 import org.scalatest.flatspec.AnyFlatSpec
@@ -43,6 +44,21 @@ class TarantoolConnectionSpec extends AnyFlatSpec with Matchers with TarantoolSp
     actualConfig.getReadTimeout() should equal(20)
     actualConfig.getRequestTimeout() should equal(30)
     actualConfig.getConnections() should equal(3)
+
+    conn.close()
+  }
+
+  "Client in TarantoolConnection" should " have the retry attempts settings if specified" in {
+    val sparkConf = SharedSparkContext.sc.getConf
+      .clone()
+      .set("tarantool.space", "test_space")
+      .set("tarantool.retries.errorType", "network")
+      .set("tarantool.retries.maxAttempts", "10")
+      .set("tarantool.retries.delay", "100")
+    val tConf: TarantoolConfig = TarantoolConfig(sparkConf)
+    val conn = TarantoolConnection()
+    val client = conn.client(tConf)
+    client.isInstanceOf[RetryingTarantoolTupleClient] should be(true)
 
     conn.close()
   }

@@ -31,6 +31,7 @@ class TarantoolConfigSpec extends AnyFlatSpec with Matchers {
     tConf.credentials should equal(None)
     tConf.timeouts should equal(Timeouts(None, None, None))
     tConf.connections should equal(None)
+    tConf.retries should equal(None)
   }
 
   it should "apply settings from options with priority" in {
@@ -76,5 +77,38 @@ class TarantoolConfigSpec extends AnyFlatSpec with Matchers {
     tConf.credentials should equal(Some(Credentials("aaaaa", "bbbbb")))
     tConf.timeouts should equal(Timeouts(Some(10), Some(20), Some(30)))
     tConf.connections should equal(Some(123))
+  }
+
+  it should "apply retries settings" in {
+    var sparkConf = new SparkConf()
+      .set("tarantool.space", "test_space")
+      .set("tarantool.retries.errorType", "none")
+    var tConf: TarantoolConfig = TarantoolConfig(sparkConf)
+    tConf.retries should equal(Some(Retries(ErrorTypes.NONE, None, None)))
+
+    sparkConf = new SparkConf()
+      .set("tarantool.space", "test_space")
+      .set("tarantool.retries.errorType", "network")
+      .set("tarantool.retries.maxAttempts", "10")
+      .set("tarantool.retries.delay", "100")
+    tConf = TarantoolConfig(sparkConf)
+    tConf.retries should equal(Some(Retries(ErrorTypes.NETWORK, Some(10), Some(100))))
+
+    sparkConf = new SparkConf()
+      .set("tarantool.space", "test_space")
+      .set("tarantool.retries.errorType", "network")
+    var ex = intercept[Exception] {
+      tConf = TarantoolConfig(sparkConf)
+    }
+    ex.getMessage should include("Number of retry attempts")
+
+    sparkConf = new SparkConf()
+      .set("tarantool.space", "test_space")
+      .set("tarantool.retries.errorType", "network")
+      .set("tarantool.retries.maxAttempts", "10")
+    ex = intercept[Exception] {
+      tConf = TarantoolConfig(sparkConf)
+    }
+    ex.getMessage should include("Delay between retry attempts must be specified")
   }
 }

@@ -4,13 +4,15 @@ import io.tarantool.driver.api.tuple.TarantoolTuple
 import io.tarantool.driver.api.{TarantoolClient, TarantoolClientConfig, TarantoolResult, TarantoolServerAddress}
 import io.tarantool.driver.auth.SimpleTarantoolCredentials
 import io.tarantool.driver.api.TarantoolClientFactory
-import io.tarantool.driver.core.{ClusterTarantoolTupleClient, ProxyTarantoolTupleClient}
+import io.tarantool.driver.api.retry.TarantoolRequestRetryPolicies.AttemptsBoundRetryPolicyFactory
 import io.tarantool.driver.protocol.Packable
 import io.tarantool.spark.connector.Logging
-import io.tarantool.spark.connector.config.{StaticClusterAddressProvider, TarantoolConfig}
+import io.tarantool.spark.connector.config.{ErrorTypes, TarantoolConfig}
+import io.tarantool.spark.connector.util.ScalaToJavaHelper.toJavaUnaryOperator
 
 import java.io.{Closeable, Serializable}
 import java.util
+import java.util.function.Predicate
 import scala.collection.JavaConverters
 import scala.reflect.ClassTag
 
@@ -23,55 +25,28 @@ object TarantoolConnection {
     TarantoolConnection(defaultClient)
 
   private def defaultClient(
-    clientConfig: TarantoolClientConfig,
-    hosts: Seq[TarantoolServerAddress]
-  ): TarantoolClient[TarantoolTuple, TarantoolResult[TarantoolTuple]] =
-    TarantoolClientFactory
+    clientConfig: TarantoolConfig
+  ): TarantoolClient[TarantoolTuple, TarantoolResult[TarantoolTuple]] = {
+    val tarantoolConfig = configBuilder(clientConfig).build()
+    var clientFactory = TarantoolClientFactory
       .createClient()
-      .withAddresses(JavaConverters.seqAsJavaListConverter(hosts).asJava)
-      .withTarantoolClientConfig(clientConfig)
+      .withAddresses(JavaConverters.seqAsJavaListConverter(clientConfig.hosts).asJava)
+      .withTarantoolClientConfig(tarantoolConfig)
       .withProxyMethodMapping()
-      .build()
 
-  def apply[T <: Packable, R <: util.Collection[T]](
-    configureClient: (TarantoolClientConfig, Seq[TarantoolServerAddress]) => TarantoolClient[T, R]
-  )(
-    implicit ctt: ClassTag[T],
-    ctr: ClassTag[R]
-  ): TarantoolConnection[T, R] =
-    new TarantoolConnection(configureClient)
+    if (clientConfig.retries.isDefined) {
+      val retries = clientConfig.retries.get
+      if (retries.errorType == ErrorTypes.NETWORK) {
+        clientFactory = clientFactory.withRetryingByNumberOfAttempts(
+          retries.retryAttempts.get,
+          toJavaUnaryOperator { policyBuilder: AttemptsBoundRetryPolicyFactory.Builder[Predicate[Throwable]] =>
+            policyBuilder.withDelay(retries.delay.get)
+          }
+        )
+      }
+    }
 
-  @transient private lazy val _tarantoolClientPool: scala.collection.mutable.Map[
-    Seq[TarantoolServerAddress],
-    TarantoolClient[_ <: Packable, _ <: util.Collection[_]]
-  ] = scala.collection.concurrent.TrieMap()
-}
-
-/**
-  * Provides connection to Tarantool server via the Java driver
-  */
-class TarantoolConnection[T <: Packable, R <: util.Collection[T]](
-  configureClient: (TarantoolClientConfig, Seq[TarantoolServerAddress]) => TarantoolClient[T, R]
-) extends Serializable
-    with Closeable
-    with Logging {
-
-  def client(cnf: TarantoolConfig): TarantoolClient[T, R] =
-    return TarantoolConnection._tarantoolClientPool
-      .getOrElseUpdate(
-        cnf.hosts,
-        createClient(configBuilder(cnf).build(), cnf.hosts)
-      )
-      .asInstanceOf[TarantoolClient[T, R]]
-
-  private def createClient(
-    tarantoolConfig: TarantoolClientConfig,
-    hosts: Seq[TarantoolServerAddress]
-  ) = {
-    val tarantoolClient = configureClient(tarantoolConfig, hosts)
-    logInfo("Created TarantoolClient, hosts = " + hosts)
-
-    tarantoolClient
+    clientFactory.build()
   }
 
   private def configBuilder(cnf: TarantoolConfig) = {
@@ -101,6 +76,46 @@ class TarantoolConnection[T <: Packable, R <: util.Collection[T]](
     }
 
     builder
+  }
+
+  def apply[T <: Packable, R <: util.Collection[T]](
+    configureClient: (TarantoolConfig) => TarantoolClient[T, R]
+  )(
+    implicit ctt: ClassTag[T],
+    ctr: ClassTag[R]
+  ): TarantoolConnection[T, R] =
+    new TarantoolConnection(configureClient)
+
+  @transient private lazy val _tarantoolClientPool: scala.collection.mutable.Map[
+    Seq[TarantoolServerAddress],
+    TarantoolClient[_ <: Packable, _ <: util.Collection[_]]
+  ] = scala.collection.concurrent.TrieMap()
+}
+
+/**
+  * Provides connection to Tarantool server via the Java driver
+  */
+class TarantoolConnection[T <: Packable, R <: util.Collection[T]](
+  configureClient: (TarantoolConfig) => TarantoolClient[T, R]
+) extends Serializable
+    with Closeable
+    with Logging {
+
+  def client(cnf: TarantoolConfig): TarantoolClient[T, R] =
+    TarantoolConnection._tarantoolClientPool
+      .getOrElseUpdate(
+        cnf.hosts,
+        createClient(cnf)
+      )
+      .asInstanceOf[TarantoolClient[T, R]]
+
+  private def createClient(
+    tarantoolConfig: TarantoolConfig
+  ) = {
+    val tarantoolClient = configureClient(tarantoolConfig)
+    logInfo("Created TarantoolClient, hosts = " + tarantoolConfig.hosts)
+
+    tarantoolClient
   }
 
   override def close(): Unit =
