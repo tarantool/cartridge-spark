@@ -51,7 +51,7 @@ class DefaultSource
       case SaveMode.Append => relation.rdd.write(connection, data, overwrite = true)
       case SaveMode.Overwrite => {
         relation.rdd.truncate(connection)
-        relation.rdd.write(connection, data, overwrite = false)
+        relation.rdd.write(connection, data, overwrite = true)
       }
       case SaveMode.ErrorIfExists => {
         if (relation.rdd.nonEmpty(connection)) {
@@ -60,11 +60,11 @@ class DefaultSource
               "already exists in Tarantool and contains data."
           )
         }
-        relation.rdd.write(connection, data, overwrite = false)
+        relation.rdd.write(connection, data, overwrite = true)
       }
       case SaveMode.Ignore =>
         if (relation.rdd.isEmpty(connection)) {
-          relation.rdd.write(connection, data, overwrite = false)
+          relation.rdd.write(connection, data, overwrite = true)
         }
     }
 
