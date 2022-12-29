@@ -33,18 +33,23 @@ ThisBuild / developers := List(
 ThisBuild / scalaVersion := scala211
 
 val commonDependencies = Seq(
-  "io.tarantool"       % "cartridge-driver"                % "0.9.0",
-  "junit"              % "junit"                           % "4.12" % Test,
-  "com.github.sbt"     % "junit-interface"                 % "0.12" % Test,
-  "org.testcontainers" % "testcontainers"                  % "1.17.3" % Test,
-  "io.tarantool"       % "testcontainers-java-tarantool"   % "0.5.0" % Test,
-  "org.scalatest"      %% "scalatest"                      % "3.2.14" % Test,
-  "org.scalamock"      %% "scalamock"                      % "5.1.0" % Test,
-  "com.dimafeng"       %% "testcontainers-scala-scalatest" % "0.39.5" % Test,
-  "org.slf4j"          % "slf4j-api"                       % "1.7.36" % Test,
-  "ch.qos.logback"     % "logback-core"                    % "1.2.5" % Test,
-  "ch.qos.logback"     % "logback-classic"                 % "1.2.5" % Test,
-  "org.apache.derby"   % "derby"                           % "10.11.1.1" % Test
+  "io.tarantool"     % "cartridge-driver"                % "0.10.0",
+  "junit"            % "junit"                           % "4.12" % Test,
+  "com.github.sbt"   % "junit-interface"                 % "0.12" % Test,
+  "org.scalatest"    %% "scalatest"                      % "3.2.14" % Test,
+  "org.scalamock"    %% "scalamock"                      % "5.2.0" % Test,
+  "com.dimafeng"     %% "testcontainers-scala-scalatest" % "0.40.12" % Test,
+  "org.slf4j"        % "slf4j-api"                       % "1.7.36" % Test,
+  "ch.qos.logback"   % "logback-core"                    % "1.2.5" % Test,
+  "ch.qos.logback"   % "logback-classic"                 % "1.2.5" % Test,
+  "org.apache.derby" % "derby"                           % "10.11.1.1" % Test,
+  "io.tarantool"     % "testcontainers-java-tarantool"   % "0.5.3" % Test
+).map(
+  _.exclude("io.netty", "netty-all")
+    .exclude("io.netty", "netty-transport")
+    .exclude("io.netty", "netty-handler")
+    .exclude("io.netty", "netty-codec")
+    .exclude("io.netty", "netty-codec-http")
 )
 
 lazy val root = (project in file("."))

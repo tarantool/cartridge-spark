@@ -3,7 +3,7 @@ package org.apache.spark.sql.tarantool
 import io.tarantool.driver.api.metadata.{TestSpaceMetadata, TestSpaceWithArrayMetadata, TestSpaceWithMapMetadata}
 import io.tarantool.driver.api.tuple.DefaultTarantoolTupleFactory
 import io.tarantool.driver.core.tuple.TarantoolTupleImpl
-import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory
+import io.tarantool.driver.mappers.factories.DefaultMessagePackMapperFactory
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 import org.scalatest.Inspectors.forAll

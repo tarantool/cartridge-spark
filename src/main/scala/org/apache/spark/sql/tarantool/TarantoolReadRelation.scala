@@ -1,7 +1,8 @@
 package org.apache.spark.sql.tarantool
 
 import io.tarantool.driver.api.tuple.TarantoolTuple
-import io.tarantool.driver.mappers.{DefaultMessagePackMapperFactory, MessagePackMapper}
+import io.tarantool.driver.mappers.MessagePackMapper
+import io.tarantool.driver.mappers.factories.DefaultMessagePackMapperFactory
 import io.tarantool.spark.connector.rdd.TarantoolReadRDD
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources.TableScan

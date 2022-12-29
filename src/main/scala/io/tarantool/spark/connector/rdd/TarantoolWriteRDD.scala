@@ -5,7 +5,8 @@ import io.tarantool.driver.api.tuple.{DefaultTarantoolTupleFactory, TarantoolTup
 import io.tarantool.driver.api.TarantoolResult
 import io.tarantool.driver.api.space.options.proxy.ProxyInsertManyOptions
 import io.tarantool.driver.api.space.options.proxy.ProxyReplaceManyOptions
-import io.tarantool.driver.mappers.{DefaultMessagePackMapperFactory, MessagePackMapper}
+import io.tarantool.driver.mappers.MessagePackMapper
+import io.tarantool.driver.mappers.factories.DefaultMessagePackMapperFactory
 import io.tarantool.spark.connector.{Logging, TarantoolSparkException}
 import io.tarantool.spark.connector.config.{TarantoolConfig, WriteConfig}
 import io.tarantool.spark.connector.connection.TarantoolConnection

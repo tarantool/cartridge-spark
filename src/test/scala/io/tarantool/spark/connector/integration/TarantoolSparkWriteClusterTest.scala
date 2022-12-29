@@ -2,7 +2,7 @@ package io.tarantool.spark.connector.integration
 
 import io.tarantool.driver.api.conditions.Conditions
 import io.tarantool.driver.api.tuple.{DefaultTarantoolTupleFactory, TarantoolTuple}
-import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory
+import io.tarantool.driver.mappers.factories.DefaultMessagePackMapperFactory
 import io.tarantool.spark.connector.toSparkContextFunctions
 import org.apache.spark.SparkException
 import org.apache.spark.sql.{Encoders, Row, SaveMode}
@@ -311,7 +311,7 @@ class TarantoolSparkWriteClusterTest extends AnyFunSuite with Matchers with Tara
       )
     ).toDS
 
-    intercept[SparkException] {
+    val ex = intercept[SparkException] {
       ds.write
         .format("org.apache.spark.sql.tarantool")
         .mode(SaveMode.Overwrite)
@@ -321,6 +321,7 @@ class TarantoolSparkWriteClusterTest extends AnyFunSuite with Matchers with Tara
         .option("tarantool.batchSize", 2)
         .save()
     }
+    ex.getMessage should not(contain("Not all tuples of the batch"))
 
     val actual = spark.sparkContext.tarantoolSpace(space, Conditions.any()).collect()
     actual.length should equal(1) // only one tuple from the first batch should be successful

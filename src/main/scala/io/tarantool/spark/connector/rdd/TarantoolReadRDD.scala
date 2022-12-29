@@ -3,7 +3,8 @@ package io.tarantool.spark.connector.rdd
 import io.tarantool.driver.api.conditions.Conditions
 import io.tarantool.driver.api.tuple.TarantoolTuple
 import io.tarantool.driver.api.{TarantoolClient, TarantoolResult}
-import io.tarantool.driver.mappers.{DefaultMessagePackMapperFactory, MessagePackMapper}
+import io.tarantool.driver.mappers.MessagePackMapper
+import io.tarantool.driver.mappers.factories.DefaultMessagePackMapperFactory
 import io.tarantool.spark.connector.config.{ReadConfig, TarantoolConfig}
 import io.tarantool.spark.connector.connection.TarantoolConnection
 import io.tarantool.spark.connector.partition.TarantoolPartition
