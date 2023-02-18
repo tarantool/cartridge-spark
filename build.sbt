@@ -57,43 +57,21 @@ lazy val root = (project in file("."))
     name := "spark-tarantool-connector",
     crossScalaVersions := supportedScalaVersions,
     // Dependencies
-    libraryDependencies ++=
-      (commonDependencies ++ ({
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, scalaMajor)) if scalaMajor >= 12 =>
-            Seq(
-              "org.apache.spark" %% "spark-core" % "2.4.8" % "provided",
-              "org.apache.spark" %% "spark-sql"  % "2.4.8" % "provided",
-              "org.apache.spark" %% "spark-hive" % "2.4.8" % "provided"
-            )
-          case _ =>
-            Seq(
-              "org.apache.spark" %% "spark-core" % "2.2.3" % "provided",
-              "org.apache.spark" %% "spark-sql"  % "2.2.3" % "provided",
-              "org.apache.spark" %% "spark-hive" % "2.2.3" % "provided"
-            )
-        }
-      }).map(
+    libraryDependencies ++= (
+      commonDependencies ++ Seq(
+        "org.apache.spark" %% "spark-core" % "2.4.8" % "provided",
+        "org.apache.spark" %% "spark-sql"  % "2.4.8" % "provided",
+        "org.apache.spark" %% "spark-hive" % "2.4.8" % "provided"
+      ).map(
         _.exclude("org.slf4j", "slf4j-log4j12")
-      )),
-    dependencyOverrides ++= {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, scalaMajor)) if scalaMajor >= 12 =>
-          Seq(
-            "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.7.1",
-            "com.fasterxml.jackson.core"   % "jackson-databind"      % "2.6.7.3",
-            "com.fasterxml.jackson.core"   % "jackson-core"          % "2.6.7",
-            "io.netty"                     % "netty-all"             % "4.1.70.Final"
-          )
-        case _ =>
-          Seq(
-            "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.5",
-            "com.fasterxml.jackson.core"   % "jackson-databind"      % "2.6.5",
-            "com.fasterxml.jackson.core"   % "jackson-core"          % "2.6.5",
-            "io.netty"                     % "netty-all"             % "4.1.17.Final"
-          )
-      }
-    },
+      )
+    ),
+    dependencyOverrides ++= Seq(
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.7.1",
+      "com.fasterxml.jackson.core"   % "jackson-databind"      % "2.6.7.3",
+      "com.fasterxml.jackson.core"   % "jackson-core"          % "2.6.7",
+      "io.netty"                     % "netty-all"             % "4.1.70.Final"
+    ),
     // Compiler options
     javacOptions ++= Seq(
       "-source",
