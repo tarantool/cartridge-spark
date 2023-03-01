@@ -10,7 +10,7 @@ case class ReadConfig(
   batchSize: Int = ReadConfig.DEFAULT_BATCH_SIZE,
   partitioner: TarantoolPartitioner = new TarantoolSinglePartitioner(),
   conditions: Conditions = Conditions.any()
-) {
+) extends Serializable {
 
   def withConditions(conditions: Conditions): ReadConfig =
     copy(conditions = conditions)
