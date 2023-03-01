@@ -15,7 +15,7 @@ import org.apache.spark.sql.tarantool.MapFunctions.rowToTuple
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.SparkContext
 
-import java.io.{PrintWriter, StringWriter}
+import java.io.{OptionalDataException, PrintWriter, StringWriter}
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicLong
@@ -74,50 +74,61 @@ class TarantoolWriteRDD[R] private[spark] (
     data: DataFrame,
     overwrite: Boolean
   ): Unit =
-    data.foreachPartition((partition: Iterator[Row]) =>
-      if (partition.nonEmpty) {
-        val client = connection.client(globalConfig)
-        val spaceMetadata = client.metadata().getSpaceByName(space).get()
-        val tupleFactory = new DefaultTarantoolTupleFactory(messagePackMapper, spaceMetadata)
+    try {
+      data.foreachPartition((partition: Iterator[Row]) =>
+        if (partition.nonEmpty) {
+          val client = connection.client(globalConfig)
+          val spaceMetadata = client.metadata().getSpaceByName(space).get()
+          val tupleFactory = new DefaultTarantoolTupleFactory(messagePackMapper, spaceMetadata)
 
-        val options: Either[ProxyReplaceManyOptions, ProxyInsertManyOptions] = if (overwrite) {
-          Left(
-            ProxyReplaceManyOptions
-              .create()
-              .withRollbackOnError(writeConfig.rollbackOnError)
-              .withStopOnError(writeConfig.stopOnError)
-          )
+          val options: Either[ProxyReplaceManyOptions, ProxyInsertManyOptions] = if (overwrite) {
+            Left(
+              ProxyReplaceManyOptions
+                .create()
+                .withRollbackOnError(writeConfig.rollbackOnError)
+                .withStopOnError(writeConfig.stopOnError)
+            )
+          } else {
+            Right(
+              ProxyInsertManyOptions
+                .create()
+                .withRollbackOnError(writeConfig.rollbackOnError)
+                .withStopOnError(writeConfig.stopOnError)
+            )
+          }
+          val operation = options match {
+            case Left(options) =>
+              (tuples: Iterable[TarantoolTuple]) =>
+                client
+                  .space(space)
+                  .replaceMany(JavaConverters.seqAsJavaListConverter(tuples.toList).asJava, options)
+            case Right(options) =>
+              (tuples: Iterable[TarantoolTuple]) =>
+                client
+                  .space(space)
+                  .insertMany(JavaConverters.seqAsJavaListConverter(tuples.toList).asJava, options)
+          }
+
+          val tupleStream: Iterator[TarantoolTuple] =
+            partition.map(row => rowToTuple(tupleFactory, row, writeConfig.transformFieldNames))
+
+          if (writeConfig.stopOnError) {
+            writeSync(tupleStream, operation)
+          } else {
+            writeAsync(tupleStream, operation)
+          }
+        }
+      )
+    } catch {
+      case e: OptionalDataException => {
+        val message = if (e.length > 0 && e.eof == false) {
+          s"Deserialization error: Object expected, but primitive data found in the next ${e.length} bytes"
         } else {
-          Right(
-            ProxyInsertManyOptions
-              .create()
-              .withRollbackOnError(writeConfig.rollbackOnError)
-              .withStopOnError(writeConfig.stopOnError)
-          )
+          "Deserialization error: Object expected, but EOF found"
         }
-        val operation = options match {
-          case Left(options) =>
-            (tuples: Iterable[TarantoolTuple]) =>
-              client
-                .space(space)
-                .replaceMany(JavaConverters.seqAsJavaListConverter(tuples.toList).asJava, options)
-          case Right(options) =>
-            (tuples: Iterable[TarantoolTuple]) =>
-              client
-                .space(space)
-                .insertMany(JavaConverters.seqAsJavaListConverter(tuples.toList).asJava, options)
-        }
-
-        val tupleStream: Iterator[TarantoolTuple] =
-          partition.map(row => rowToTuple(tupleFactory, row, writeConfig.transformFieldNames))
-
-        if (writeConfig.stopOnError) {
-          writeSync(tupleStream, operation)
-        } else {
-          writeAsync(tupleStream, operation)
-        }
+        throw TarantoolSparkException(message, e)
       }
-    )
+    }
 
   type AsyncTarantoolResult = CompletableFuture[TarantoolResult[TarantoolTuple]]
 

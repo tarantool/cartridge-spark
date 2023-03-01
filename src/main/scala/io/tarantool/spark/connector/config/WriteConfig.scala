@@ -10,7 +10,7 @@ case class WriteConfig(
   stopOnError: Boolean = true,
   rollbackOnError: Boolean = true,
   transformFieldNames: FieldNameTransformation = FieldNameTransformations.NONE
-) {}
+) extends Serializable
 
 object WriteConfig extends TarantoolConfigBase {
 
