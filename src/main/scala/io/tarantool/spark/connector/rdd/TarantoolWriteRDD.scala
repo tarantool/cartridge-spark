@@ -1,26 +1,23 @@
 package io.tarantool.spark.connector.rdd
 
-import io.tarantool.driver.api.conditions.Conditions
-import io.tarantool.driver.api.tuple.{DefaultTarantoolTupleFactory, TarantoolTuple}
 import io.tarantool.driver.api.TarantoolResult
-import io.tarantool.driver.api.space.options.proxy.ProxyInsertManyOptions
-import io.tarantool.driver.api.space.options.proxy.ProxyReplaceManyOptions
+import io.tarantool.driver.api.conditions.Conditions
+import io.tarantool.driver.api.space.options.proxy.{ProxyInsertManyOptions, ProxyReplaceManyOptions}
+import io.tarantool.driver.api.tuple.{DefaultTarantoolTupleFactory, TarantoolTuple}
 import io.tarantool.driver.mappers.MessagePackMapper
 import io.tarantool.driver.mappers.factories.DefaultMessagePackMapperFactory
-import io.tarantool.spark.connector.{Logging, TarantoolSparkException}
 import io.tarantool.spark.connector.config.{TarantoolConfig, WriteConfig}
 import io.tarantool.spark.connector.connection.TarantoolConnection
 import io.tarantool.spark.connector.util.ScalaToJavaHelper.{toJavaBiFunction, toJavaFunction}
+import io.tarantool.spark.connector.{Logging, TarantoolSparkException}
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.tarantool.MapFunctions.rowToTuple
 import org.apache.spark.sql.{DataFrame, Row}
-import org.apache.spark.SparkContext
 
 import java.io.{OptionalDataException, PrintWriter, StringWriter}
-import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicLong
-import java.util.{List => JList}
-import java.util.{LinkedList => JLinkedList}
+import java.util.{Collections, LinkedList => JLinkedList, List => JList}
 import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConverters
 import scala.collection.mutable.ListBuffer
@@ -40,9 +37,7 @@ class TarantoolWriteRDD[R] private[spark] (
   val space: String,
   val writeConfig: WriteConfig
 )(
-  implicit ct: ClassTag[R],
-  implicit val messagePackMapper: MessagePackMapper =
-    DefaultMessagePackMapperFactory.getInstance().defaultComplexTypesMapper()
+  implicit val ct: ClassTag[R]
 ) extends TarantoolBaseRDD
     with Serializable
     with Logging {
@@ -75,10 +70,12 @@ class TarantoolWriteRDD[R] private[spark] (
     overwrite: Boolean
   ): Unit =
     try {
-      data.foreachPartition((partition: Iterator[Row]) =>
+      val func = (partition: Iterator[Row]) =>
         if (partition.nonEmpty) {
           val client = connection.client(globalConfig)
           val spaceMetadata = client.metadata().getSpaceByName(space).get()
+          val messagePackMapper: MessagePackMapper =
+            DefaultMessagePackMapperFactory.getInstance().defaultComplexTypesMapper()
           val tupleFactory = new DefaultTarantoolTupleFactory(messagePackMapper, spaceMetadata)
 
           val options: Either[ProxyReplaceManyOptions, ProxyInsertManyOptions] = if (overwrite) {
@@ -113,20 +110,27 @@ class TarantoolWriteRDD[R] private[spark] (
             partition.map(row => rowToTuple(tupleFactory, row, writeConfig.transformFieldNames))
 
           if (writeConfig.stopOnError) {
-            writeSync(tupleStream, operation)
+            writeSync(tupleStream, operation, messagePackMapper)
           } else {
-            writeAsync(tupleStream, operation)
+            writeAsync(tupleStream, operation, messagePackMapper)
           }
         }
-      )
+      data.foreachPartition(func)
     } catch {
-      case e: OptionalDataException => {
-        val message = if (e.length > 0 && e.eof == false) {
-          s"Deserialization error: Object expected, but primitive data found in the next ${e.length} bytes"
+      case e: Throwable => {
+        var inner = e
+        while (Option(inner).isDefined && !inner.isInstanceOf[OptionalDataException]) inner = inner.getCause
+        if (Option(inner).isDefined) {
+          val exc: OptionalDataException = inner.asInstanceOf[OptionalDataException]
+          val message = if (exc.length > 0 && !exc.eof) {
+            s"Deserialization error: Object expected, but primitive data found in the next ${exc.length} bytes"
+          } else {
+            "Deserialization error: Object expected, but EOF found"
+          }
+          throw TarantoolSparkException(message, exc)
         } else {
-          "Deserialization error: Object expected, but EOF found"
+          throw e
         }
-        throw TarantoolSparkException(message, e)
       }
     }
 
@@ -134,7 +138,8 @@ class TarantoolWriteRDD[R] private[spark] (
 
   private def writeSync(
     tupleStream: Iterator[TarantoolTuple],
-    operation: Iterable[TarantoolTuple] => AsyncTarantoolResult
+    operation: Iterable[TarantoolTuple] => AsyncTarantoolResult,
+    messagePackMapper: MessagePackMapper
   ): Unit = {
     val rowCount: AtomicLong = new AtomicLong(0)
     val tuples: ListBuffer[TarantoolTuple] = ListBuffer()
@@ -152,7 +157,7 @@ class TarantoolWriteRDD[R] private[spark] (
                 operation(batch)
                   .thenApply(toJavaFunction { result: TarantoolResult[TarantoolTuple] =>
                     if (result.size != expectedCount) {
-                      throw batchUnsuccessfulException(tuples)
+                      throw batchUnsuccessfulException(tuples, messagePackMapper)
                     }
                     rowCount.getAndAdd(expectedCount)
                     result
@@ -180,7 +185,7 @@ class TarantoolWriteRDD[R] private[spark] (
         operation(tuples)
           .thenApply(toJavaFunction { result: TarantoolResult[TarantoolTuple] =>
             if (result.size != expectedCount) {
-              throw batchUnsuccessfulException(tuples)
+              throw batchUnsuccessfulException(tuples, messagePackMapper)
             }
             rowCount.getAndAdd(expectedCount)
             result
@@ -210,7 +215,8 @@ class TarantoolWriteRDD[R] private[spark] (
 
   private def writeAsync(
     tupleStream: Iterator[TarantoolTuple],
-    operation: Iterable[TarantoolTuple] => AsyncTarantoolResult
+    operation: Iterable[TarantoolTuple] => AsyncTarantoolResult,
+    messagePackMapper: MessagePackMapper
   ): Unit = {
     val rowCount: AtomicLong = new AtomicLong(0)
     val failedRowsExceptions: JList[Throwable] =
@@ -230,7 +236,7 @@ class TarantoolWriteRDD[R] private[spark] (
                   })
                   .thenApply(toJavaFunction { result: TarantoolResult[TarantoolTuple] =>
                     if (result.size != expectedCount) {
-                      val exception = batchUnsuccessfulException(tuples)
+                      val exception = batchUnsuccessfulException(tuples, messagePackMapper)
                       failedRowsExceptions.add(exception)
                       throw exception
                     }
@@ -253,7 +259,7 @@ class TarantoolWriteRDD[R] private[spark] (
         })
         .thenApply(toJavaFunction { result: TarantoolResult[TarantoolTuple] =>
           if (result.size != expectedCount) {
-            val exception = batchUnsuccessfulException(tuples)
+            val exception = batchUnsuccessfulException(tuples, messagePackMapper)
             failedRowsExceptions.add(exception)
             throw exception
           }
@@ -302,7 +308,8 @@ class TarantoolWriteRDD[R] private[spark] (
   }
 
   private def batchUnsuccessfulException(
-    tuples: ListBuffer[TarantoolTuple]
+    tuples: ListBuffer[TarantoolTuple],
+    messagePackMapper: MessagePackMapper
   ): TarantoolSparkException = {
     val batch = tuples
       .map(tuple => tuple.toMessagePackValue(messagePackMapper).toString)
