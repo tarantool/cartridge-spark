@@ -39,7 +39,6 @@ val commonDependencies = Seq(
   "org.scalatest"    %% "scalatest"                      % "3.2.14" % Test,
   "org.scalamock"    %% "scalamock"                      % "5.2.0" % Test,
   "com.dimafeng"     %% "testcontainers-scala-scalatest" % "0.40.12" % Test,
-  "org.slf4j"        % "slf4j-api"                       % "1.7.36" % Test,
   "ch.qos.logback"   % "logback-core"                    % "1.2.5" % Test,
   "ch.qos.logback"   % "logback-classic"                 % "1.2.5" % Test,
   "org.apache.derby" % "derby"                           % "10.11.1.1" % Test,
@@ -50,6 +49,7 @@ val commonDependencies = Seq(
     .exclude("io.netty", "netty-handler")
     .exclude("io.netty", "netty-codec")
     .exclude("io.netty", "netty-codec-http")
+    .exclude("org.slf4j", "slf4j-api")
 )
 
 lazy val root = (project in file("."))
@@ -70,7 +70,8 @@ lazy val root = (project in file("."))
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.7.1",
       "com.fasterxml.jackson.core"   % "jackson-databind"      % "2.6.7.3",
       "com.fasterxml.jackson.core"   % "jackson-core"          % "2.6.7",
-      "io.netty"                     % "netty-all"             % "4.1.70.Final"
+      "io.netty"                     % "netty-all"             % "4.1.70.Final",
+      "org.slf4j"                    % "slf4j-api"             % "1.7.36" % Test
     ),
     // Compiler options
     javacOptions ++= Seq(
