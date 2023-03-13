@@ -33,7 +33,7 @@ ThisBuild / developers := List(
 ThisBuild / scalaVersion := scala211
 
 val commonDependencies = Seq(
-  "io.tarantool"     % "cartridge-driver"                % "0.10.0",
+  "io.tarantool"     % "cartridge-driver"                % "0.10.1",
   "junit"            % "junit"                           % "4.12" % Test,
   "com.github.sbt"   % "junit-interface"                 % "0.12" % Test,
   "org.scalatest"    %% "scalatest"                      % "3.2.14" % Test,
