@@ -29,7 +29,7 @@ jobs:
             router_port: "3331"
             router_api_port: "8381"
           - scala: "2.13.10"
-            tarantool: "2.10"
+            tarantool: "2.8"
             router_port: "3361"
             router_api_port: "8681"
     steps:
