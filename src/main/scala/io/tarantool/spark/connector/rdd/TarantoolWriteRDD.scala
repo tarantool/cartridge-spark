@@ -18,7 +18,6 @@ import java.io.{OptionalDataException, PrintWriter, StringWriter}
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicLong
 import java.util.{Collections, LinkedList => JLinkedList, List => JList}
-import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConverters
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
@@ -271,13 +270,13 @@ class TarantoolWriteRDD[R] private[spark] (
     var savedException: Throwable = null
     try {
       CompletableFuture
-        .allOf(allFutures: _*)
+        .allOf(allFutures.toSeq: _*)
         .handle(toJavaBiFunction { (_: Void, exception: Throwable) =>
           if (!failedRowsExceptions.isEmpty) {
             val sw: StringWriter = new StringWriter()
             val pw: PrintWriter = new PrintWriter(sw)
             try {
-              failedRowsExceptions.foreach { exception =>
+              JavaConverters.collectionAsScalaIterableConverter(failedRowsExceptions).asScala.foreach { exception =>
                 pw.append("\n\n")
                 exception.printStackTrace(pw)
               }

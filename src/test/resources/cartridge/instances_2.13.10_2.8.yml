@@ -1,0 +1,29 @@
+testapp.router:
+  workdir: ./tmp/db_dev/3361
+  advertise_uri: 0.0.0.0:3361
+  http_port: 8681
+
+testapp.second-router:
+  workdir: ./tmp/db_dev/3371
+  advertise_uri: 0.0.0.0:3371
+  http_port: 8691
+
+testapp.s1-master:
+  workdir: ./tmp/db_dev/3362
+  advertise_uri: localhost:3362
+  http_port: 8682
+
+testapp.s1-replica:
+  workdir: ./tmp/db_dev/3363
+  advertise_uri: localhost:3363
+  http_port: 8683
+
+testapp.s2-master:
+  workdir: ./tmp/db_dev/3364
+  advertise_uri: localhost:3364
+  http_port: 8684
+
+testapp.s2-replica:
+  workdir: ./tmp/db_dev/3365
+  advertise_uri: localhost:3365
+  http_port: 8685

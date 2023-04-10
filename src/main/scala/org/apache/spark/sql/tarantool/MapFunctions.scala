@@ -160,16 +160,16 @@ object MapFunctions {
 
   def mapSimpleValue(value: Any): Any =
     value match {
-      case value: BigInt     => value.underlying()
-      case value: BigDecimal => value.underlying()
+      case value: BigInt     => value
+      case value: BigDecimal => value
       case value: Boolean    => value.booleanValue().asInstanceOf[JBoolean]
-      case value: Byte       => value.underlying().asInstanceOf[JByte]
-      case value: Char       => value.underlying().asInstanceOf[JCharacter]
-      case value: Short      => value.underlying().asInstanceOf[JShort]
-      case value: Int        => value.underlying().asInstanceOf[JInteger]
-      case value: Long       => value.underlying().asInstanceOf[JLong]
-      case value: Float      => value.underlying().asInstanceOf[JFloat]
-      case value: Double     => value.underlying().asInstanceOf[JDouble]
+      case value: Byte       => value.asInstanceOf[JByte]
+      case value: Char       => value.asInstanceOf[JCharacter]
+      case value: Short      => value.asInstanceOf[JShort]
+      case value: Int        => value.asInstanceOf[JInteger]
+      case value: Long       => value.asInstanceOf[JLong]
+      case value: Float      => value.asInstanceOf[JFloat]
+      case value: Double     => value.asInstanceOf[JDouble]
       case value: Any        => identity(value)
     }
 }

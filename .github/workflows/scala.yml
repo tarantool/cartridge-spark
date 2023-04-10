@@ -20,14 +20,18 @@ jobs:
     strategy:
       matrix:
         include:
-          - scala: 2.11.12
-            tarantool: 2.8
-            router_port: 3301
-            router_api_port: 8081
-          - scala: 2.12.14
-            tarantool: 2.8
-            router_port: 3331
-            router_api_port: 8381
+          - scala: "2.11.12"
+            tarantool: "2.8"
+            router_port: "3301"
+            router_api_port: "8081"
+          - scala: "2.12.16"
+            tarantool: "2.8"
+            router_port: "3331"
+            router_api_port: "8381"
+          - scala: "2.13.10"
+            tarantool: "2.8"
+            router_port: "3361"
+            router_api_port: "8681"
     steps:
       - uses: actions/checkout@v2
       - name: Setup Scala
@@ -58,7 +62,7 @@ jobs:
           TARANTOOL_TOPOLOGY_FILE: 'cartridge/topology_${{ matrix.scala }}_${{ matrix.tarantool }}.lua'
           TARANTOOL_ROUTER_PORT: ${{ matrix.router_port }}
           TARANTOOL_ROUTER_API_PORT: ${{ matrix.router_api_port }}
-        run: sbt ++${{ matrix.scala }} coverageOn test coverageReport coverageOff
+        run: sbt ++${{ matrix.scala }}! test
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
@@ -69,8 +73,9 @@ jobs:
     strategy:
       matrix:
         scala:
-          - 2.11.12
-          - 2.12.14
+          - "2.11.12"
+          - "2.12.16"
+          - "2.13.10"
     steps:
       - uses: actions/checkout@v2
       - name: Setup Scala
@@ -85,4 +90,4 @@ jobs:
             ~/.sbt
           key: ${{ runner.os }}-sbt-${{ matrix.scala }}-${{ hashFiles('**/build.sbt') }}
       - name: Check formatting
-        run: sbt ++${{ matrix.scala }} scalafmtSbtCheck scalafmtCheck test:scalafmtCheck
+        run: sbt ++${{ matrix.scala }}! scalafmtSbtCheck scalafmtCheck test:scalafmtCheck
