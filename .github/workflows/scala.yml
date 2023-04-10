@@ -62,7 +62,7 @@ jobs:
           TARANTOOL_TOPOLOGY_FILE: 'cartridge/topology_${{ matrix.scala }}_${{ matrix.tarantool }}.lua'
           TARANTOOL_ROUTER_PORT: ${{ matrix.router_port }}
           TARANTOOL_ROUTER_API_PORT: ${{ matrix.router_api_port }}
-        run: sbt ++${{ matrix.scala }} test
+        run: sbt ++${{ matrix.scala }}! test
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
@@ -90,4 +90,4 @@ jobs:
             ~/.sbt
           key: ${{ runner.os }}-sbt-${{ matrix.scala }}-${{ hashFiles('**/build.sbt') }}
       - name: Check formatting
-        run: sbt ++${{ matrix.scala }} scalafmtSbtCheck scalafmtCheck test:scalafmtCheck
+        run: sbt ++${{ matrix.scala }}! scalafmtSbtCheck scalafmtCheck test:scalafmtCheck
