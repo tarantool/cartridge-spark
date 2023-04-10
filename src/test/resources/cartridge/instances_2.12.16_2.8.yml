@@ -27,8 +27,3 @@ testapp.s2-replica:
   workdir: ./tmp/db_dev/3335
   advertise_uri: localhost:3335
   http_port: 8385
-
-testapp-stateboard:
-  workdir: ./tmp/db_dev/3340
-  listen: localhost:3340
-  password: passwd

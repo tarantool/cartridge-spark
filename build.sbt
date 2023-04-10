@@ -1,8 +1,10 @@
 import sbt.Keys._
+import sbtrelease.ReleaseStateTransformations._
 
 val scala211 = "2.11.12"
-val scala212 = "2.12.14"
-val supportedScalaVersions = Seq(scala212, scala211)
+val scala212 = "2.12.16"
+val scala213 = "2.13.10"
+val supportedScalaVersions = Seq(scala213, scala212, scala211)
 
 ThisBuild / description := "Spark Connector for Tarantool and Tarantool Cartridge"
 ThisBuild / homepage := Some(url("https://github.com/tarantool/cartridge-spark"))
@@ -58,20 +60,43 @@ lazy val root = (project in file("."))
     crossScalaVersions := supportedScalaVersions,
     // Dependencies
     libraryDependencies ++= (
-      commonDependencies ++ Seq(
-        "org.apache.spark" %% "spark-core" % "2.4.8" % "provided",
-        "org.apache.spark" %% "spark-sql"  % "2.4.8" % "provided",
-        "org.apache.spark" %% "spark-hive" % "2.4.8" % "provided"
-      ).map(
+      commonDependencies ++ ({
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, scalaMajor)) if scalaMajor < 12 =>
+            Seq(
+              "org.apache.spark" %% "spark-core" % "2.4.8" % "provided",
+              "org.apache.spark" %% "spark-sql"  % "2.4.8" % "provided",
+              "org.apache.spark" %% "spark-hive" % "2.4.8" % "provided"
+            )
+          case _ =>
+            Seq(
+              "org.apache.spark" %% "spark-core" % "3.3.2" % "provided",
+              "org.apache.spark" %% "spark-sql"  % "3.3.2" % "provided",
+              "org.apache.spark" %% "spark-hive" % "3.3.2" % "provided"
+            )
+        }
+      }).map(
         _.exclude("org.slf4j", "slf4j-log4j12")
       )
     ),
-    dependencyOverrides ++= Seq(
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.7.1",
-      "com.fasterxml.jackson.core"   % "jackson-databind"      % "2.6.7.3",
-      "com.fasterxml.jackson.core"   % "jackson-core"          % "2.6.7",
-      "io.netty"                     % "netty-all"             % "4.1.70.Final",
-      "org.slf4j"                    % "slf4j-api"             % "1.7.36" % Test
+    dependencyOverrides ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, scalaMajor)) if scalaMajor < 12 =>
+          Seq(
+            "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.7.1",
+            "com.fasterxml.jackson.core"   % "jackson-databind"      % "2.6.7.3",
+            "com.fasterxml.jackson.core"   % "jackson-core"          % "2.6.7"
+          )
+        case _ =>
+          Seq(
+            "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.2",
+            "com.fasterxml.jackson.core"   % "jackson-databind"      % "2.14.2",
+            "com.fasterxml.jackson.core"   % "jackson-core"          % "2.14.2"
+          )
+      }
+    } ++ Seq(
+      "io.netty"  % "netty-all" % "4.1.74.Final",
+      "org.slf4j" % "slf4j-api" % "1.7.36" % Test
     ),
     // Compiler options
     javacOptions ++= Seq(

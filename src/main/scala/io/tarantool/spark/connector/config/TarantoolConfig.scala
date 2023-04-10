@@ -92,7 +92,7 @@ object TarantoolConfig {
       hosts = Array(new TarantoolServerAddress(TarantoolDefaults.DEFAULT_HOST))
     }
 
-    hosts
+    hosts.toSeq
   }
 
   def parseTimeouts(cfg: SparkConf): Timeouts =

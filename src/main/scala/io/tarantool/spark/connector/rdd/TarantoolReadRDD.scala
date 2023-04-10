@@ -46,7 +46,7 @@ class TarantoolReadRDD[R] private[spark] (
     val connection = TarantoolConnection()
     context.addTaskCompletionListener {
       new Function1[TaskContext, Unit] {
-        def apply(context: TaskContext) { connection.close() }
+        def apply(context: TaskContext): Unit = connection.close()
       }
     }
 
