@@ -148,8 +148,3 @@ ThisBuild / Test / javaOptions ++= Seq(
 
 // ScalaTest
 ThisBuild / Test / logBuffered := false
-
-// Settings for scoverage plug-in
-// Disabled until this bug is fixed: https://github.com/scoverage/sbt-scoverage/issues/306
-// ThisBuild / coverageEnabled := true
-ThisBuild / coverageHighlighting := true

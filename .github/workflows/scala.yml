@@ -62,7 +62,7 @@ jobs:
           TARANTOOL_TOPOLOGY_FILE: 'cartridge/topology_${{ matrix.scala }}_${{ matrix.tarantool }}.lua'
           TARANTOOL_ROUTER_PORT: ${{ matrix.router_port }}
           TARANTOOL_ROUTER_API_PORT: ${{ matrix.router_api_port }}
-        run: sbt ++${{ matrix.scala }} coverageOn test coverageReport coverageOff
+        run: sbt ++${{ matrix.scala }} test
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
