@@ -127,6 +127,21 @@ lazy val root = (project in file("."))
         Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
     },
     publishMavenStyle := true,
+    // Release settings
+    crossScalaVersions := Nil,
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,
+      inquireVersions,
+      runClean,
+      releaseStepCommandAndRemaining("+test"),
+      setReleaseVersion,
+      commitReleaseVersion,
+      tagRelease,
+      releaseStepCommandAndRemaining("+publishSigned"),
+      setNextVersion,
+      commitNextVersion,
+      pushChanges
+    ),
     releaseUseGlobalVersion := false,
     releasePublishArtifactsAction := PgpKeys.publishSigned.value
   )
