@@ -17,14 +17,14 @@ You can link against this library for Maven in your program at the following coo
 <dependency>
   <groupId>io.tarantool</groupId>
   <artifactId>spark-tarantool-connector</artifactId>
-  <version>0.5.3</version>
+  <version>0.6.0</version>
 </dependency>
 ```
 
 or for `sbt`:
 
 ```
-libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.5.3"
+libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.6.0"
 ```
 
 ## Version Compatibility
@@ -32,7 +32,8 @@ libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.5.3"
 | Connector | Scala   | Apache Spark | Tarantool Server | Tarantool Cartridge Driver |
 | --------- | ------- |--------------| ---------------- |----------------------------|
 | 0.x.x     | 2.11.12 | 2.4          | 1.10.9+,  2.4+   | 0.10.1+                    |
-| 0.x.x     | 2.12.14 | 2.4          | 1.10.9+,  2.4+   | 0.10.1+                    |
+| 0.x.x     | 2.12.16 | 3.2          | 1.10.9+,  2.4+   | 0.10.1+                    |
+| 0.x.x     | 2.13.10 | 3.2          | 1.10.9+,  2.4+   | 0.10.1+                    |
 
 ## Getting Started
 
