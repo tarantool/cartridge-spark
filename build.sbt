@@ -128,7 +128,6 @@ lazy val root = (project in file("."))
     },
     publishMavenStyle := true,
     // Release settings
-    crossScalaVersions := Nil,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
       inquireVersions,
