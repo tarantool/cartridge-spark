@@ -12,7 +12,7 @@ import scala.reflect.io.Directory
 /** Shared Docker container and Spark instance between all tests cases */
 object SharedSparkContext extends Logging {
 
-  private lazy val warehouseLocation = Files.createTempDirectory("spark-wirehouse").toFile
+  private lazy val warehouseLocation = Files.createTempDirectory("spark-warehouse").toFile
 
   private lazy val clusterCookie =
     sys.env.getOrElse("TARANTOOL_CLUSTER_COOKIE", "testapp-cluster-cookie")
@@ -74,9 +74,10 @@ object SharedSparkContext extends Logging {
       .config(conf)
       .config("spark.ui.enabled", false)
       .config("spark.sql.warehouse.dir", warehouseLocationPath)
+      .config("hive.metastore.warehouse.dir", warehouseLocationPath)
       .config(
         "javax.jdo.option.ConnectionURL",
-        "jdbc:derby:;databaseName=tarantoolTest;create=true"
+        s"jdbc:derby:;databaseName=$warehouseLocationPath/tarantoolTest;create=true"
       )
 
     if (withHiveSupport)
@@ -96,6 +97,9 @@ object SharedSparkContext extends Logging {
     _conf
   }
 
+  def dbLocation: String =
+    warehouseLocation.getAbsolutePath
+
   def sc: SparkContext =
     sparkSession.get().sparkContext
 
@@ -107,11 +111,8 @@ object SharedSparkContext extends Logging {
     if (sparkSession.compareAndSet(scRef, null)) {
       scRef.stop()
     }
-    cleanupTempDirectory()
-  }
-
-  def cleanupTempDirectory(): Unit =
     Directory(warehouseLocation).deleteRecursively()
+  }
 
   def teardown(): Unit = {
     container.stop()

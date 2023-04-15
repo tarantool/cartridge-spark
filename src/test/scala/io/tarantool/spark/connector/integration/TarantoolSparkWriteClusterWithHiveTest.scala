@@ -56,8 +56,9 @@ class TarantoolSparkWriteClusterWithHiveTest extends AnyFunSuite with Matchers w
     forAll(variants) { (stopOnError, batchSize) =>
       val space = "reg_numbers"
 
-      SharedSparkContext.spark.sql("create database if not exists dl_raw")
-      SharedSparkContext.spark.sql("drop table if exists DL_RAW.reg_numbers")
+      SharedSparkContext.spark.sql("drop database if exists DL_RAW cascade")
+      SharedSparkContext.spark.sql("create database if not exists DL_RAW")
+      SharedSparkContext.spark.sql("drop table if exists DL_RAW.reg_numbers purge")
 
       SharedSparkContext.spark.sql("""
                                      |create table if not exists DL_RAW.reg_numbers (
@@ -66,11 +67,11 @@ class TarantoolSparkWriteClusterWithHiveTest extends AnyFunSuite with Matchers w
                                      |    ,regnum                decimal(38) 
                                      |  ) stored as orc""".stripMargin)
       SharedSparkContext.spark.sql(s"""
-                                      |insert into dl_raw.reg_numbers values 
+                                      |insert into DL_RAW.reg_numbers values 
                                        ${generateRows}
                                       |""".stripMargin)
 
-      val ds = SharedSparkContext.spark.table("dl_raw.reg_numbers")
+      val ds = SharedSparkContext.spark.table("DL_RAW.reg_numbers")
 
       ds.printSchema()
 
@@ -79,6 +80,7 @@ class TarantoolSparkWriteClusterWithHiveTest extends AnyFunSuite with Matchers w
         .option("tarantool.space", space)
         .option("tarantool.stopOnError", stopOnError)
         .option("tarantool.batchSize", batchSize)
+        .option("path", s"${SharedSparkContext.dbLocation}/dl_raw.db")
         .mode(SaveMode.Overwrite)
         .save()
 
