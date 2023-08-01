@@ -17,14 +17,14 @@ You can link against this library for Maven in your program at the following coo
 <dependency>
   <groupId>io.tarantool</groupId>
   <artifactId>spark-tarantool-connector</artifactId>
-  <version>0.6.0</version>
+  <version>0.7.0</version>
 </dependency>
 ```
 
 or for `sbt`:
 
 ```
-libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.6.0"
+libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.7.0"
 ```
 
 ## Version Compatibility
@@ -62,6 +62,12 @@ libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.6.0"
 | tarantool.stopOnError         | stop writing immediately after a batch fails with an exception or not all tuples are written                                                                                                   | true          |
 | tarantool.rollbackOnError     | rollback all changes written in scope of the last batch to a replicaset where an exception occurred                                                                                            | true          |
 | tarantool.transformFieldNames | possible values: none (default), snake_case, lower_case, upper_case. Necessary if the field names in datasets built from Spark SQL queries does not correspond to the field names in Tarantool | none          |
+
+#### Prerequisites
+
+The Spark connector requires a deployed [Tarantool Cartridge](https://github.com/tarantool/cartridge) application with installed [tarantool/crud](https://github.com/tarantool/crud) module. See the versino compatibility table in the previos seciton.
+
+You may also use an official [Tarantool Docker image](https://hub.docker.com/r/tarantool/tarantool/tags), but it requires configuring the Cartridge cluster, so it is recommended to take an example configuration [from the connector tests](https://github.com/tarantool/cartridge-spark/blob/master/src/test/resources/Dockerfile).
 
 #### Example
 
