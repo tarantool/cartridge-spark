@@ -10,6 +10,7 @@ import org.scalatest.Inspectors.forAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+import org.msgpack.value.Value
 import java.time.Instant
 import scala.collection.JavaConverters.{iterableAsScalaIterableConverter, mapAsJavaMapConverter, seqAsJavaListConverter}
 
@@ -35,7 +36,7 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
       StructField("discount", FloatType, nullable = true),
       StructField("favourite_constant", DoubleType, nullable = true),
       StructField("married", BooleanType, nullable = true),
-      StructField("updated", LongType, nullable = true)
+      StructField("updated", TimestampType, nullable = true)
     )
   )
 
@@ -43,7 +44,7 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
     Array(
       StructField("order_id", StringType, nullable = true),
       StructField("order_items", DataTypes.createArrayType(IntegerType), nullable = true),
-      StructField("updated", LongType, nullable = true)
+      StructField("updated", TimestampType, nullable = true)
     )
   )
 
@@ -51,7 +52,7 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
     Array(
       StructField("id", StringType, nullable = true),
       StructField("settings", DataTypes.createMapType(StringType, StringType), nullable = true),
-      StructField("updated", LongType, nullable = true)
+      StructField("updated", TimestampType, nullable = true)
     )
   )
 
@@ -65,22 +66,21 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert a tuple with simple values of different types" in {
-    val time = Instant.now().getEpochSecond
-    val tuple = new TarantoolTupleImpl(
+    val tupleFactoryWithSchema = new DefaultTarantoolTupleFactory(defaultMapper, TestSpaceMetadata())
+    val time = Instant.now()
+    val tuple = tupleFactoryWithSchema.create(
       Seq(
-        "Akakiy",
-        "Akakievich",
-        "Ivanov",
-        null,
-        38,
-        new java.math.BigDecimal(200),
-        0.5f,
-        Math.PI,
-        false,
-        time
-      ).asJava,
-      defaultMapper,
-      TestSpaceMetadata()
+        defaultMapper.toValue("Akakiy").asInstanceOf[Value],
+        defaultMapper.toValue("Akakievich").asInstanceOf[Value],
+        defaultMapper.toValue("Ivanov").asInstanceOf[Value],
+        defaultMapper.toValue(null).asInstanceOf[Value],
+        defaultMapper.toValue(38).asInstanceOf[Value],
+        defaultMapper.toValue(new java.math.BigDecimal(200)).asInstanceOf[Value],
+        defaultMapper.toValue(0.5f).asInstanceOf[Value],
+        defaultMapper.toValue(Math.PI).asInstanceOf[Value],
+        defaultMapper.toValue(false).asInstanceOf[Value],
+        defaultMapper.toValue(time).asInstanceOf[Value]
+      ).asJava
     )
     val row = MapFunctions.tupleToRow(tuple, defaultMapper, simpleSchema)
     val expected = Row(
@@ -103,15 +103,14 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert a tuple with array values" in {
-    val time = Instant.now().getEpochSecond
-    val tuple = new TarantoolTupleImpl(
+    val tupleFactoryWithSchema = new DefaultTarantoolTupleFactory(defaultMapper, TestSpaceWithArrayMetadata())
+    val time = Instant.now()
+    val tuple = tupleFactoryWithSchema.create(
       Seq(
-        null,
-        defaultMapper.toValue(List(1, 2, 3, 4).asJava),
-        time
-      ).asJava,
-      defaultMapper,
-      TestSpaceWithArrayMetadata()
+        defaultMapper.toValue(Some(null).orNull).asInstanceOf[Value],
+        defaultMapper.toValue(List(1, 2, 3, 4).asJava).asInstanceOf[Value],
+        defaultMapper.toValue(time).asInstanceOf[Value]
+      ).asJava
     )
     val row = MapFunctions.tupleToRow(tuple, defaultMapper, simpleSchemaWithArray)
     val expected = Row(
@@ -127,15 +126,14 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert a tuple with map values" in {
-    val time = Instant.now().getEpochSecond
-    val tuple = new TarantoolTupleImpl(
+    val tupleFactoryWithSchema = new DefaultTarantoolTupleFactory(defaultMapper, TestSpaceWithMapMetadata())
+    val time = Instant.now()
+    val tuple = tupleFactoryWithSchema.create(
       Seq(
-        null,
-        defaultMapper.toValue(Map("host" -> "127.0.0.1", "port" -> "3301").asJava),
-        time
-      ).asJava,
-      defaultMapper,
-      TestSpaceWithMapMetadata()
+        defaultMapper.toValue(Some(null).orNull).asInstanceOf[Value],
+        defaultMapper.toValue(Map("host" -> "127.0.0.1", "port" -> "3301").asJava).asInstanceOf[Value],
+        defaultMapper.toValue(time).asInstanceOf[Value]
+      ).asJava
     )
     val row = MapFunctions.tupleToRow(tuple, defaultMapper, simpleSchemaWithMap)
     val expected = Row(
@@ -159,7 +157,7 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert a row with simple values of different types" in {
-    val time = Instant.now().getEpochSecond
+    val time = Instant.now()
     val row = Row(
       "Akakiy",
       "Akakievich",
@@ -201,7 +199,7 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert a row with array values" in {
-    val time = Instant.now().getEpochSecond
+    val time = Instant.now()
     val row = Row(
       null,
       List(1, 2, 3, 4).asJava,
@@ -228,7 +226,7 @@ class MapFunctionsSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert a row with map values" in {
-    val time = Instant.now().getEpochSecond
+    val time = Instant.now()
     val row = Row(
       null,
       Map("host" -> "127.0.0.1", "port" -> "3301").asJava,

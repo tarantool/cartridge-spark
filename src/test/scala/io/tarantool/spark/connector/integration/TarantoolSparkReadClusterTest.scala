@@ -28,11 +28,11 @@ class TarantoolSparkReadClusterTest extends AnyFunSuite with Matchers with Taran
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    SharedSparkContext.container.executeScript("test_setup.lua").get
+    SharedSparkContext.container.executeScript("test_setup.lua")
   }
 
   override protected def afterEach(): Unit = {
-    SharedSparkContext.container.executeScript("test_teardown.lua").get
+    SharedSparkContext.container.executeScript("test_teardown.lua")
     super.afterEach()
   }
 

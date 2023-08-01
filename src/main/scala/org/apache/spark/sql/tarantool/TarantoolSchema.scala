@@ -74,6 +74,7 @@ object TarantoolFieldTypes extends Enumeration {
   val BOOLEAN: TarantoolFieldType = TarantoolFieldType("boolean", DataTypes.BooleanType)
   val DECIMAL: TarantoolFieldType = TarantoolFieldType("decimal", createDecimalType())
   val UUID: TarantoolFieldType = TarantoolFieldType("uuid", DataTypes.StringType)
+  val DATETIME: TarantoolFieldType = TarantoolFieldType("datetime", DataTypes.TimestampType)
 
   val ARRAY: TarantoolFieldType =
     TarantoolFieldType("array", DataTypes.createArrayType(DataTypes.StringType, true))

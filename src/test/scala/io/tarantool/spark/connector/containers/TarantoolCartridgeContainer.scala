@@ -5,6 +5,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import org.testcontainers.containers.output.Slf4jLogConsumer
 import org.testcontainers.containers.{TarantoolCartridgeContainer => JavaTarantoolCartridgeContainer}
 import org.testcontainers.containers.wait.strategy.Wait
+import org.testcontainers.containers.Container
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
@@ -51,8 +52,12 @@ case class TarantoolCartridgeContainer(
   def getRouterPort: Int = container.getRouterPort
   def getAPIPort: Int = container.getAPIPort
 
-  def executeScript(scriptResourcePath: String): CompletableFuture[util.List[_]] =
-    container.executeScript(scriptResourcePath)
+  def executeScript(scriptResourcePath: String): Unit = {
+    val result = container.executeScript(scriptResourcePath)
+    if (result.getExitCode != 0) {
+      throw new RuntimeException("Failed to execute script. Details:\n" + result.getStderr)
+    }
+  }
 }
 
 object TarantoolCartridgeContainer {
