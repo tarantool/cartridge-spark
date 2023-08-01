@@ -129,7 +129,7 @@ class TarantoolSparkWriteClusterTest extends AnyFunSuite with Matchers with Tara
     thrownException.getMessage should include("already exists in Tarantool")
 
     // Clear the data and check that they are written in ErrorIfExists mode
-    SharedSparkContext.container.executeScript("test_teardown.lua").get()
+    SharedSparkContext.container.executeScript("test_teardown.lua")
 
     df = SharedSparkContext.spark.createDataFrame(
       SharedSparkContext.spark.sparkContext.parallelize(
@@ -175,7 +175,7 @@ class TarantoolSparkWriteClusterTest extends AnyFunSuite with Matchers with Tara
     actual.foreach(item => item.getString("order_type") should endWith("444"))
 
     // Clear the data and check if they are written in Ignore mode
-    SharedSparkContext.container.executeScript("test_teardown.lua").get()
+    SharedSparkContext.container.executeScript("test_teardown.lua")
 
     df.write
       .format("org.apache.spark.sql.tarantool")

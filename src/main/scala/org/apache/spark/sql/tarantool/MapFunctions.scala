@@ -19,6 +19,8 @@ import java.lang.{
   Short => JShort
 }
 import java.util.{ArrayList => JList, HashMap => JMap}
+import java.sql.Timestamp
+import java.time.Instant
 import scala.collection.JavaConverters.{mapAsJavaMapConverter, seqAsJavaListConverter}
 
 /**
@@ -75,15 +77,16 @@ object MapFunctions {
 
   def dataTypeToJavaClass(dataType: DataType): Class[_] =
     dataType match {
-      case StringType     => classOf[java.lang.String]
-      case LongType       => classOf[java.lang.Long]
-      case IntegerType    => classOf[java.lang.Integer]
-      case ShortType      => classOf[java.lang.Integer]
-      case ByteType       => classOf[java.lang.Integer]
-      case BooleanType    => classOf[java.lang.Boolean]
-      case DoubleType     => classOf[java.lang.Double]
-      case FloatType      => classOf[java.lang.Float]
-      case _: DecimalType => classOf[java.math.BigDecimal]
+      case StringType       => classOf[java.lang.String]
+      case LongType         => classOf[java.lang.Long]
+      case IntegerType      => classOf[java.lang.Integer]
+      case ShortType        => classOf[java.lang.Integer]
+      case ByteType         => classOf[java.lang.Integer]
+      case BooleanType      => classOf[java.lang.Boolean]
+      case DoubleType       => classOf[java.lang.Double]
+      case FloatType        => classOf[java.lang.Float]
+      case _: DecimalType   => classOf[java.math.BigDecimal]
+      case _: TimestampType => classOf[java.time.Instant]
       case mapType: MapType =>
         val keyClass = dataTypeToJavaClass(mapType.keyType)
         val valueClass = dataTypeToJavaClass(mapType.valueType)
@@ -170,6 +173,7 @@ object MapFunctions {
       case value: Long       => value.asInstanceOf[JLong]
       case value: Float      => value.asInstanceOf[JFloat]
       case value: Double     => value.asInstanceOf[JDouble]
+      case value: Timestamp  => value.toInstant().asInstanceOf[Instant]
       case value: Any        => identity(value)
     }
 }

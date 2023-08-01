@@ -35,16 +35,17 @@ ThisBuild / developers := List(
 ThisBuild / scalaVersion := scala211
 
 val commonDependencies = Seq(
-  "io.tarantool"     % "cartridge-driver"                % "0.10.1",
-  "junit"            % "junit"                           % "4.12" % Test,
-  "com.github.sbt"   % "junit-interface"                 % "0.12" % Test,
-  "org.scalatest"    %% "scalatest"                      % "3.2.14" % Test,
+  "io.tarantool"     % "cartridge-driver"                % "0.12.0",
+  "junit"            % "junit"                           % "4.13.2" % Test,
+  "com.github.sbt"   % "junit-interface"                 % "0.13.3" % Test,
+  "org.scalatest"    %% "scalatest"                      % "3.2.16" % Test,
   "org.scalamock"    %% "scalamock"                      % "5.2.0" % Test,
-  "com.dimafeng"     %% "testcontainers-scala-scalatest" % "0.40.12" % Test,
-  "ch.qos.logback"   % "logback-core"                    % "1.2.5" % Test,
-  "ch.qos.logback"   % "logback-classic"                 % "1.2.5" % Test,
+  "com.dimafeng"     %% "testcontainers-scala-scalatest" % "0.40.17" % Test,
+  "ch.qos.logback"   % "logback-core"                    % "1.2.12" % Test,
+  "ch.qos.logback"   % "logback-classic"                 % "1.2.12" % Test,
   "org.apache.derby" % "derby"                           % "10.11.1.1" % Test,
-  "io.tarantool"     % "testcontainers-java-tarantool"   % "0.5.3" % Test
+  "io.tarantool"     % "testcontainers-java-tarantool"   % "1.0.0" % Test,
+  "org.msgpack"      % "msgpack-core"                    % "0.9.0" % Test
 ).map(
   _.exclude("io.netty", "netty-all")
     .exclude("io.netty", "netty-transport")
@@ -116,7 +117,8 @@ lazy val root = (project in file("."))
     // Test frameworks options
     testOptions ++= Seq(
       Tests.Argument(TestFrameworks.JUnit, "-v"),
-      Tests.Setup(() => System.setSecurityManager(null)) // SPARK-22918
+      Tests.Setup(() => System.setSecurityManager(null)), // SPARK-22918
+      Tests.Argument("-oF")
     ),
     // Publishing settings
     publishTo := {

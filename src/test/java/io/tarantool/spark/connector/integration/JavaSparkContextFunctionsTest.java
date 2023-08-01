@@ -23,7 +23,7 @@ public class JavaSparkContextFunctionsTest extends SharedJavaSparkContext {
     @Before
     public void beforeEach() {
         try {
-            container.executeScript("test_setup.lua").get();
+            container.executeScript("test_setup.lua");
         } catch (Exception e) {
             throw new RuntimeException("Failed to set up test: ", e);
         }
@@ -32,7 +32,7 @@ public class JavaSparkContextFunctionsTest extends SharedJavaSparkContext {
     @After
     public void afterEach() {
         try {
-            container.executeScript("test_teardown.lua").get();
+            container.executeScript("test_teardown.lua");
         } catch (Exception e) {
             throw new RuntimeException("Failed to set up test: ", e);
         }

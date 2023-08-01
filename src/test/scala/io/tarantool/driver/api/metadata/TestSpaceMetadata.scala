@@ -91,7 +91,7 @@ object TestSpaceMetadata {
     "discount" -> TestFieldMetadata("discount", "number", 6),
     "favourite_constant" -> TestFieldMetadata("favourite_constant", "double", 7),
     "married" -> TestFieldMetadata("married", "boolean", 8),
-    "updated" -> TestFieldMetadata("updated", "unsigned", 9)
+    "updated" -> TestFieldMetadata("updated", "datetime", 9)
   )
 
   def apply(): TarantoolSpaceMetadata =
@@ -103,7 +103,7 @@ object TestSpaceWithArrayMetadata {
   private val spaceFieldMetadata = Map(
     "order_id" -> TestFieldMetadata("order_id", "string", 0),
     "order_items" -> TestFieldMetadata("order_items", "array", 1),
-    "updated" -> TestFieldMetadata("updated", "integer", 2)
+    "updated" -> TestFieldMetadata("updated", "datetime", 2)
   )
 
   def apply(): TarantoolSpaceMetadata =
@@ -115,7 +115,7 @@ object TestSpaceWithMapMetadata {
   private val spaceFieldMetadata = Map(
     "id" -> TestFieldMetadata("order_id", "string", 0),
     "settings" -> TestFieldMetadata("order_items", "map", 1),
-    "updated" -> TestFieldMetadata("updated", "integer", 2)
+    "updated" -> TestFieldMetadata("updated", "datetime", 2)
   )
 
   def apply(): TarantoolSpaceMetadata =

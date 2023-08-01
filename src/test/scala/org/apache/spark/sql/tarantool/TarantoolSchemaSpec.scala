@@ -28,7 +28,7 @@ class TarantoolSchemaSpec extends AnyFlatSpec {
         DataTypes.createStructField("discount", DoubleType, true),
         DataTypes.createStructField("favourite_constant", DoubleType, true),
         DataTypes.createStructField("married", BooleanType, true),
-        DataTypes.createStructField("updated", LongType, true)
+        DataTypes.createStructField("updated", TimestampType, true)
       ).toArray
     )
     val actual = schema.asStructType("testSpace")
