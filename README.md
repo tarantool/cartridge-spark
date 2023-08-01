@@ -65,9 +65,9 @@ libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.7.0"
 
 #### Prerequisites
 
-The Spark connector requires a deployed [Tarantool Cartridge](https://github.com/tarantool/cartridge) application with installed [tarantool/crud](https://github.com/tarantool/crud) module. See the versino compatibility table in the previos seciton.
+The Spark connector requires a deployed [Tarantool Cartridge](https://github.com/tarantool/cartridge) application with [tarantool/crud](https://github.com/tarantool/crud) module installed. See the version compatibility table in the previous section.
 
-You may also use an official [Tarantool Docker image](https://hub.docker.com/r/tarantool/tarantool/tags), but it requires configuring the Cartridge cluster, so it is recommended to take an example configuration [from the connector tests](https://github.com/tarantool/cartridge-spark/blob/master/src/test/resources/Dockerfile).
+You may also use an official [Tarantool Docker image](https://hub.docker.com/r/tarantool/tarantool/tags), but it requires configuring the Cartridge cluster, so it is recommended to take the example configuration [from the connector tests](https://github.com/tarantool/cartridge-spark/blob/master/src/test/resources/Dockerfile).
 
 #### Example
 
