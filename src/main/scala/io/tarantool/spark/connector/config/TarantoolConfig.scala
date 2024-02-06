@@ -11,7 +11,7 @@ case class Timeouts(connect: Option[Int], read: Option[Int], request: Option[Int
 object ErrorTypes extends Enumeration {
   type ErrorType = Value
 
-  val NONE, NETWORK = Value
+  val NONE, NETWORK, CONFLICT, ALL = Value
 }
 
 case class Retries(errorType: ErrorType, retryAttempts: Option[Int], delay: Option[Int]) extends Serializable
@@ -110,7 +110,7 @@ object TarantoolConfig {
     if (strErrorType.isDefined) {
       val errorType = ErrorTypes.withName(strErrorType.get.toUpperCase)
 
-      if (errorType == ErrorTypes.NETWORK) {
+      if (errorType != ErrorTypes.NONE) {
         if (retryAttempts.isEmpty) {
           throw new IllegalArgumentException("Number of retry attempts must be specified")
         }

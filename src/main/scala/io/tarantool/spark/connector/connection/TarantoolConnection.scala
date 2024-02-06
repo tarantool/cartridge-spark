@@ -5,10 +5,12 @@ import io.tarantool.driver.api.{TarantoolClient, TarantoolClientConfig, Tarantoo
 import io.tarantool.driver.auth.SimpleTarantoolCredentials
 import io.tarantool.driver.api.TarantoolClientFactory
 import io.tarantool.driver.api.retry.TarantoolRequestRetryPolicies.AttemptsBoundRetryPolicyFactory
+import io.tarantool.driver.api.retry.TarantoolRequestRetryPolicies.retryNetworkErrors
+import io.tarantool.driver.exceptions.TarantoolInternalException
 import io.tarantool.driver.protocol.Packable
 import io.tarantool.spark.connector.Logging
 import io.tarantool.spark.connector.config.{ErrorTypes, TarantoolConfig}
-import io.tarantool.spark.connector.util.ScalaToJavaHelper.toJavaUnaryOperator
+import io.tarantool.spark.connector.util.ScalaToJavaHelper.{toJavaPredicate, toJavaUnaryOperator}
 
 import java.io.{Closeable, Serializable}
 import java.util
@@ -24,6 +26,12 @@ object TarantoolConnection {
   def apply(): TarantoolConnection[TarantoolTuple, TarantoolResult[TarantoolTuple]] =
     TarantoolConnection(defaultClient)
 
+  private def isConflictError(e: Throwable): Boolean =
+    e.isInstanceOf[TarantoolInternalException] &&
+      e.getMessage.indexOf("Transaction has been aborted by conflict") > 0
+
+  private def retryConflictErrors(): Predicate[Throwable] = toJavaPredicate(isConflictError)
+
   private def defaultClient(
     clientConfig: TarantoolConfig
   ): TarantoolClient[TarantoolTuple, TarantoolResult[TarantoolTuple]] = {
@@ -36,9 +44,15 @@ object TarantoolConnection {
 
     if (clientConfig.retries.isDefined) {
       val retries = clientConfig.retries.get
-      if (retries.errorType == ErrorTypes.NETWORK) {
+      if (retries.errorType != ErrorTypes.NONE) {
+        val predicate = retries.errorType match {
+          case ErrorTypes.NETWORK  => retryNetworkErrors
+          case ErrorTypes.CONFLICT => retryConflictErrors
+          case _                   => retryNetworkErrors.and(retryConflictErrors)
+        }
         clientFactory = clientFactory.withRetryingByNumberOfAttempts(
           retries.retryAttempts.get,
+          predicate,
           toJavaUnaryOperator { policyBuilder: AttemptsBoundRetryPolicyFactory.Builder[Predicate[Throwable]] =>
             policyBuilder.withDelay(retries.delay.get)
           }

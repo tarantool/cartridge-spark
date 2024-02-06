@@ -4,6 +4,7 @@ import java.util.function.{
   BiFunction => JBiFunction,
   Consumer => JConsumer,
   Function => JFunction,
+  Predicate => JPredicate,
   Supplier => JSupplier,
   UnaryOperator => JUnaryOperator
 }
@@ -31,6 +32,13 @@ object ScalaToJavaHelper {
     */
   def toJavaFunction[T1, R](f: T1 => R): JFunction[T1, R] = new JFunction[T1, R] {
     override def apply(t: T1): R = f.apply(t)
+  }
+
+  /**
+    * Converts a Scala {@link Function1} to a Java {@link java.util.function.Predicate}
+    */
+  def toJavaPredicate[T1](f: T1 => Boolean): JPredicate[T1] = new JPredicate[T1] {
+    override def test(t: T1): Boolean = f.apply(t)
   }
 
   /**

@@ -49,9 +49,9 @@ libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.7.0"
 | tarantool.requestTimeout      | request completion timeout, in milliseconds                                                                    | 2000           |
 | tarantool.connections         | number of connections established with each host                                                               | 1              |
 | tarantool.cursorBatchSize     | default limit for prefetching tuples in RDD iterator                                                           | 1000           |
-| tarantool.retries.errorType   | configures automatic retry of requests to Tarantool cluster. Possible values: "network", "none"                | none           |
-| tarantool.retries.maxAttempts | maximum number of retry attempts for each request. Mandatory if errorType is set to "network"                  |                |
-| tarantool.retries.delay       | delay between subsequent retries of each request (in milliseconds). Mandatory if errorType is set to "network" |                |
+| tarantool.retries.errorType   | configures automatic retry of requests to Tarantool cluster. Possible values: "network", "conflict", "all", "none"                | none           |
+| tarantool.retries.maxAttempts | maximum number of retry attempts for each request. Mandatory if errorType is not "none"                  |                |
+| tarantool.retries.delay       | delay between subsequent retries of each request (in milliseconds). Mandatory if errorType is not "none" |                |
 
 ### Dataset API request options
 
