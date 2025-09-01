@@ -1,34 +1,42 @@
-ARG TARANTOOL_VERSION=2.11.0
-FROM tarantool/tarantool:${TARANTOOL_VERSION}-centos7 AS cartridge-base
+ARG IMAGE="tarantool/tarantool"
+ARG TARANTOOL_VERSION="2.11.2-ubuntu20.04"
+FROM $IMAGE:$TARANTOOL_VERSION AS cartridge-base
 
-ARG TARANTOOL_SERVER_USER="tarantool"
-ARG TARANTOOL_SERVER_UID=1000
-ARG TARANTOOL_SERVER_GROUP="tarantool"
-ARG TARANTOOL_SERVER_GID=1000
-# a yum bug requires setting ulimit, see https://bugzilla.redhat.com/show_bug.cgi?id=1537564
-RUN ulimit -n 1024 &&\
-    yum -y install cmake make gcc gcc-c++ git unzip cartridge-cli && \
-    yum clean all
-RUN groupadd -g $TARANTOOL_SERVER_GID $TARANTOOL_SERVER_GROUP && \
-    useradd -u $TARANTOOL_SERVER_UID -g $TARANTOOL_SERVER_GID -m -s /bin/bash $TARANTOOL_SERVER_USER \
-    || true
+ARG TARANTOOL_SERVER_USER="root"
+ARG TARANTOOL_SERVER_GROUP="root"
 USER $TARANTOOL_SERVER_USER:$TARANTOOL_SERVER_GROUP
+RUN groupadd $TARANTOOL_SERVER_GROUP && useradd -m -s /bin/bash $TARANTOOL_SERVER_USER || true
+
+# install dependencies
+RUN ulimit -n 1024 && \
+    apt-get -y update && \
+    apt-get -y install build-essential cmake make gcc git unzip cartridge-cli && \
+    apt-get -y clean
 RUN cartridge version
 
+# build and run
 FROM cartridge-base AS cartridge-app
+ARG CARTRIDGE_SRC_DIR="cartridge"
 ARG TARANTOOL_WORKDIR="/app"
 ARG TARANTOOL_RUNDIR="/tmp/run"
 ARG TARANTOOL_DATADIR="/tmp/data"
 ARG TARANTOOL_LOGDIR="/tmp/log"
 ARG TARANTOOL_INSTANCES_FILE="./instances.yml"
-ARG TARANTOOL_CLUSTER_COOKIE="testapp-cluster-cookie"
+ARG TARANTOOL_CLUSTER_COOKIE
+ARG START_DELAY="5s"
+ENV START_DELAY=$START_DELAY
 ENV TARANTOOL_WORKDIR=$TARANTOOL_WORKDIR
 ENV TARANTOOL_RUNDIR=$TARANTOOL_RUNDIR
 ENV TARANTOOL_DATADIR=$TARANTOOL_DATADIR
 ENV TARANTOOL_LOGDIR=$TARANTOOL_LOGDIR
 ENV TARANTOOL_INSTANCES_FILE=$TARANTOOL_INSTANCES_FILE
 ENV TARANTOOL_CLUSTER_COOKIE=$TARANTOOL_CLUSTER_COOKIE
+ENV CMAKE_DUMMY_WEBUI="YES"
+COPY $CARTRIDGE_SRC_DIR $TARANTOOL_WORKDIR
 WORKDIR $TARANTOOL_WORKDIR
-CMD cartridge build && \
-    cartridge start --run-dir=$TARANTOOL_RUNDIR --data-dir=$TARANTOOL_DATADIR \
+
+RUN rm -rf .rocks && cartridge build --verbose
+
+CMD if [ -z "$TARANTOOL_CLUSTER_COOKIE" ]; then unset TARANTOOL_CLUSTER_COOKIE ; fi ; \
+    sleep $START_DELAY && cartridge start --run-dir=$TARANTOOL_RUNDIR --data-dir=$TARANTOOL_DATADIR \
         --log-dir=$TARANTOOL_LOGDIR --cfg=$TARANTOOL_INSTANCES_FILE

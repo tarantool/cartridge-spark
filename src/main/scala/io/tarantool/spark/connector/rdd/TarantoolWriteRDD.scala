@@ -2,7 +2,8 @@ package io.tarantool.spark.connector.rdd
 
 import io.tarantool.driver.api.TarantoolResult
 import io.tarantool.driver.api.conditions.Conditions
-import io.tarantool.driver.api.space.options.proxy.{ProxyInsertManyOptions, ProxyReplaceManyOptions}
+import io.tarantool.driver.api.space.options.{ProxyInsertManyOptions, ProxyReplaceManyOptions}
+import io.tarantool.driver.api.space.options.crud.enums.{RollbackOnError, StopOnError}
 import io.tarantool.driver.api.tuple.{DefaultTarantoolTupleFactory, TarantoolTuple}
 import io.tarantool.driver.mappers.MessagePackMapper
 import io.tarantool.driver.mappers.factories.DefaultMessagePackMapperFactory
@@ -21,6 +22,8 @@ import java.util.{Collections, LinkedList => JLinkedList, List => JList}
 import scala.collection.JavaConverters
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
+import io.tarantool.driver.api.space.options.crud.enums.RollbackOnError
+import io.tarantool.driver.api.space.options.crud.enums.StopOnError
 
 /**
   * Tarantool RDD implementation for write operations
@@ -81,15 +84,15 @@ class TarantoolWriteRDD[R] private[spark] (
             Left(
               ProxyReplaceManyOptions
                 .create()
-                .withRollbackOnError(writeConfig.rollbackOnError)
-                .withStopOnError(writeConfig.stopOnError)
+                .withRollbackOnError(if (writeConfig.rollbackOnError) RollbackOnError.TRUE else RollbackOnError.FALSE)
+                .withStopOnError(if (writeConfig.stopOnError) StopOnError.TRUE else StopOnError.FALSE)
             )
           } else {
             Right(
               ProxyInsertManyOptions
                 .create()
-                .withRollbackOnError(writeConfig.rollbackOnError)
-                .withStopOnError(writeConfig.stopOnError)
+                .withRollbackOnError(if (writeConfig.rollbackOnError) RollbackOnError.TRUE else RollbackOnError.FALSE)
+                .withStopOnError(if (writeConfig.stopOnError) StopOnError.TRUE else StopOnError.FALSE)
             )
           }
           val operation = options match {

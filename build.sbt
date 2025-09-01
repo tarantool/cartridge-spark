@@ -35,17 +35,19 @@ ThisBuild / developers := List(
 ThisBuild / scalaVersion := scala211
 
 val commonDependencies = Seq(
-  "io.tarantool"     % "cartridge-driver"                % "0.12.0",
+  "io.tarantool"     % "cartridge-driver"                % "0.14.3",
   "junit"            % "junit"                           % "4.13.2" % Test,
   "com.github.sbt"   % "junit-interface"                 % "0.13.3" % Test,
-  "org.scalatest"    %% "scalatest"                      % "3.2.16" % Test,
+  "org.scalatest"    %% "scalatest"                      % "3.2.19" % Test,
   "org.scalamock"    %% "scalamock"                      % "5.2.0" % Test,
-  "com.dimafeng"     %% "testcontainers-scala-scalatest" % "0.40.17" % Test,
+  "com.dimafeng"     %% "testcontainers-scala-scalatest" % "0.41.3" % Test,
   "ch.qos.logback"   % "logback-core"                    % "1.2.12" % Test,
   "ch.qos.logback"   % "logback-classic"                 % "1.2.12" % Test,
   "org.apache.derby" % "derby"                           % "10.11.1.1" % Test,
-  "io.tarantool"     % "testcontainers-java-tarantool"   % "1.0.0" % Test,
-  "org.msgpack"      % "msgpack-core"                    % "0.9.0" % Test
+  // version 1.4.0 of testcontainers-java-tarantool is compiled with JDK 21
+  // TODO: create test run configuration with newer JDK and update to 1.4.0
+  "io.tarantool" % "testcontainers-java-tarantool" % "1.3.3"  % Test,
+  "org.msgpack"  % "msgpack-core"                  % "0.9.10" % Test
 ).map(
   _.exclude("io.netty", "netty-all")
     .exclude("io.netty", "netty-transport")
@@ -96,7 +98,7 @@ lazy val root = (project in file("."))
           )
       }
     } ++ Seq(
-      "io.netty"  % "netty-all" % "4.1.74.Final",
+      "io.netty"  % "netty-all" % "4.1.124.Final",
       "org.slf4j" % "slf4j-api" % "1.7.36" % Test
     ),
     // Compiler options
