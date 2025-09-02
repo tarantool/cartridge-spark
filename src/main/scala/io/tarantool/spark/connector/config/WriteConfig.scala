@@ -7,6 +7,7 @@ import org.apache.spark.sql.tarantool.FieldNameTransformations.FieldNameTransfor
 case class WriteConfig(
   spaceName: String,
   batchSize: Int = WriteConfig.DEFAULT_BATCH_SIZE,
+  timeout: Int = WriteConfig.DEFAULT_TIMEOUT,
   stopOnError: Boolean = true,
   rollbackOnError: Boolean = true,
   transformFieldNames: FieldNameTransformation = FieldNameTransformations.NONE
@@ -16,10 +17,12 @@ object WriteConfig extends TarantoolConfigBase {
 
   private val SPACE_NAME = "space"
   private val BATCH_SIZE = "batchSize"
+  private val TIMEOUT = "timeout"
   private val STOP_ON_ERROR = "stopOnError"
   private val ROLLBACK_ON_ERROR = "rollbackOnError"
   private val TRANSFORM_FIELD_NAMES = "transformFieldNames"
   private val DEFAULT_BATCH_SIZE = 1000
+  private val DEFAULT_TIMEOUT = 1000 // ms
 
   def apply(sparkConf: SparkConf, options: Option[Map[String, String]]): WriteConfig =
     new WriteConfig(
@@ -30,6 +33,9 @@ object WriteConfig extends TarantoolConfigBase {
       batchSize = getFromSparkConfOrOptions(sparkConf, options, BATCH_SIZE)
         .map(_.toInt)
         .getOrElse(DEFAULT_BATCH_SIZE),
+      timeout = getFromSparkConfOrOptions(sparkConf, options, TIMEOUT)
+        .map(_.toInt)
+        .getOrElse(DEFAULT_TIMEOUT),
       stopOnError = getFromSparkConfOrOptions(sparkConf, options, STOP_ON_ERROR)
         .map(_.toBoolean)
         .getOrElse(true),

@@ -86,6 +86,7 @@ class TarantoolWriteRDD[R] private[spark] (
                 .create()
                 .withRollbackOnError(if (writeConfig.rollbackOnError) RollbackOnError.TRUE else RollbackOnError.FALSE)
                 .withStopOnError(if (writeConfig.stopOnError) StopOnError.TRUE else StopOnError.FALSE)
+                .withTimeout(writeConfig.timeout)
             )
           } else {
             Right(
@@ -93,6 +94,7 @@ class TarantoolWriteRDD[R] private[spark] (
                 .create()
                 .withRollbackOnError(if (writeConfig.rollbackOnError) RollbackOnError.TRUE else RollbackOnError.FALSE)
                 .withStopOnError(if (writeConfig.stopOnError) StopOnError.TRUE else StopOnError.FALSE)
+                .withTimeout(writeConfig.timeout)
             )
           }
           val operation = options match {

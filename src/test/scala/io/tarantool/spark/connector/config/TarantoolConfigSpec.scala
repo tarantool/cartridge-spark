@@ -22,6 +22,7 @@ class TarantoolConfigSpec extends AnyFlatSpec with Matchers {
     val wConf: WriteConfig = WriteConfig("test_space")
     wConf.spaceName should equal("test_space")
     wConf.batchSize should equal(1000)
+    wConf.timeout should equal(1000)
     wConf.stopOnError should equal(true)
     wConf.rollbackOnError should equal(true)
 
@@ -110,5 +111,28 @@ class TarantoolConfigSpec extends AnyFlatSpec with Matchers {
       tConf = TarantoolConfig(sparkConf)
     }
     ex.getMessage should include("Delay between retry attempts must be specified")
+  }
+
+  it should "apply operation timeout settings" in {
+    var sparkConf = new SparkConf()
+      .set("tarantool.space", "test_space")
+    var wConf = WriteConfig(sparkConf, None)
+    wConf.spaceName should equal("test_space")
+    wConf.timeout should equal(1000)
+
+    val options = Map(
+      "tarantool.timeout" -> "10"
+    )
+    wConf = WriteConfig(sparkConf, Some(options))
+    wConf.timeout should equal(10)
+
+    sparkConf = new SparkConf()
+      .set("tarantool.space", "test_space")
+      .set("tarantool.timeout", "20")
+    wConf = WriteConfig(sparkConf, Some(options))
+    wConf.timeout should equal(10)
+
+    wConf = WriteConfig(sparkConf, None)
+    wConf.timeout should equal(20)
   }
 }
