@@ -30,8 +30,6 @@ RUN set -x \
     libsasl2-dev \
     libssl-dev \
     libpq-dev \
-    gis-devel \
-    libproj-dev \
     gosu \
     curl \
     wget \
@@ -64,7 +62,6 @@ RUN set -x \
     && ${ROCKS_INSTALLER} install mysql $LUAROCK_TARANTOOL_MYSQL_VERSION \
     && ${ROCKS_INSTALLER} install memcached $LUAROCK_MEMCACHED_VERSION \
     && ${ROCKS_INSTALLER} install metrics $LUAROCK_METRICS_VERSION \
-    && ${ROCKS_INSTALLER} install gis $LUAROCK_TARANTOOL_GIS_VERSION \
     && ${ROCKS_INSTALLER} install gperftools $LUAROCK_TARANTOOL_GPERFTOOLS_VERSION \
     && apt purge -y unzip git gcc cmake \
     && apt -y autoremove \
