@@ -17,7 +17,9 @@ ENV GC64=${GC64:-OFF} \
     LUAROCK_TARANTOOL_PG_VERSION=2.0.2 \
     LUAROCK_TARANTOOL_MYSQL_VERSION=2.1.3 \
     LUAROCK_TARANTOOL_GIS_VERSION=1.0.1 \
-    LUAROCK_TARANTOOL_GPERFTOOLS_VERSION=1.0.1
+    LUAROCK_TARANTOOL_GPERFTOOLS_VERSION=1.0.1 \
+    LUAROCK_TARANTOOL_CARTRIDGE_VERSION=2.7.6 \
+    LUAROCK_TARANTOOL_CRUD_VERSION=0.14.1
 
 RUN set -x \
     && useradd --user-group --create-home --no-log-init --shell /bin/bash tarantool \
@@ -49,6 +51,9 @@ RUN set -x \
     && apt show -a tarantool \
     && apt -y install tarantool=${TARANTOOL_FULL_VERSION} \
     && apt -y install tarantool-dev=${TARANTOOL_FULL_VERSION} \
+    && curl -sLO https://github.com/tarantool/cartridge-cli/releases/download/2.12.12/cartridge-cli_2.12.12_amd64.deb \
+    && dpkg -i cartridge-cli_2.12.12_amd64.deb \
+    && rm -f cartridge-cli_2.12.12_amd64.deb \
     && apt clean \
     && mkdir /.rocks \
     && ${ROCKS_INSTALLER} install lua-term \
@@ -63,6 +68,8 @@ RUN set -x \
     && ${ROCKS_INSTALLER} install memcached $LUAROCK_MEMCACHED_VERSION \
     && ${ROCKS_INSTALLER} install metrics $LUAROCK_METRICS_VERSION \
     && ${ROCKS_INSTALLER} install gperftools $LUAROCK_TARANTOOL_GPERFTOOLS_VERSION \
+    && ${ROCKS_INSTALLER} install cartridge $LUAROCK_TARANTOOL_CARTRIDGE_VERSION \
+    && ${ROCKS_INSTALLER} install crud $LUAROCK_TARANTOOL_CRUD_VERSION \
     && apt purge -y unzip git gcc cmake \
     && apt -y autoremove \
     && rm -rf /var/lib/apt/lists/
@@ -75,7 +82,7 @@ FROM tarantool-base AS cartridge-base
 RUN set -e; \
     ulimit -n 1024 && \
     apt-get -y update && \
-    apt-get -y install build-essential cmake make gcc git unzip cartridge-cli && \
+    apt-get -y install build-essential cmake make gcc git unzip && \
     apt-get -y clean
 RUN cartridge version
 
