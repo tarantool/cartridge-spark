@@ -33,9 +33,9 @@ jobs:
             router_port: "3361"
             router_api_port: "8681"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5.0.0
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v11
+        uses: olafurpg/setup-scala@v14
         with:
           java-version: "adopt@1.8"
       - name: Cache docker images
@@ -46,7 +46,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docker-layer-cache-
       - name: Cache SBT
-        uses: actions/cache@v2.1.4
+        uses: actions/cache@v4
         with:
           path: |
             ~/.ivy2/cache
@@ -77,13 +77,13 @@ jobs:
           - "2.12.16"
           - "2.13.10"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5.0.0
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v11
+        uses: olafurpg/setup-scala@v14
         with:
           java-version: "adopt@1.8"
       - name: Cache SBT
-        uses: actions/cache@v2.1.4
+        uses: actions/cache@v4
         with:
           path: |
             ~/.ivy2/cache

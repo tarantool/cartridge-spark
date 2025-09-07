@@ -36,6 +36,7 @@ case class TarantoolCartridgeContainer(
       topologyConfigurationFile,
       buildArgs.asJava
     ).withLogConsumer(logConsumer)
+      .withEnv("TARANTOOL_CLUSTER_COOKIE", routerPassword)
       .withInstanceDir(instanceDir)
       .withDirectoryBinding(directoryBinding)
       .withRouterHost(routerHost)

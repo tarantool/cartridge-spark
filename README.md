@@ -17,14 +17,14 @@ You can link against this library for Maven in your program at the following coo
 <dependency>
   <groupId>io.tarantool</groupId>
   <artifactId>spark-tarantool-connector</artifactId>
-  <version>0.7.0</version>
+  <version>0.8.0</version>
 </dependency>
 ```
 
 or for `sbt`:
 
 ```
-libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.7.0"
+libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.8.0"
 ```
 
 ## Version Compatibility
@@ -55,13 +55,14 @@ libraryDependencies += "io.tarantool" %% "spark-tarantool-connector" % "0.7.0"
 
 ### Dataset API request options
 
-| property-key                  | description                                                                                                                                                                                    | default value |
-|-------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
-| tarantool.space               | Tarantool space name. Mandatory option                                                                                                                                                         |               |
-| tarantool.batchSize           | limit of records to be read or written at once                                                                                                                                                 | 1000          |
-| tarantool.stopOnError         | stop writing immediately after a batch fails with an exception or not all tuples are written                                                                                                   | true          |
-| tarantool.rollbackOnError     | rollback all changes written in scope of the last batch to a replicaset where an exception occurred                                                                                            | true          |
-| tarantool.transformFieldNames | possible values: none (default), snake_case, lower_case, upper_case. Necessary if the field names in datasets built from Spark SQL queries does not correspond to the field names in Tarantool | none          |
+| property-key                  | description                                                                                                                                                                                       | default value |
+|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
+| tarantool.space               | Tarantool space name. Mandatory option                                                                                                                                                            |               |
+| tarantool.batchSize           | limit of records to be read or written at once                                                                                                                                                    | 1000          |
+| tarantool.timeout             | internal timeout in millis for each server write operation. Allows either to prevent server overloading in the peak load periods, or to prevent timeout exceptions on client on heavy operations. | 1000          |
+| tarantool.stopOnError         | stop writing immediately after a batch fails with an exception or not all tuples are written                                                                                                      | true          |
+| tarantool.rollbackOnError     | rollback all changes written in scope of the last batch to a replicaset where an exception occurred                                                                                               | true          |
+| tarantool.transformFieldNames | possible values: none (default), snake_case, lower_case, upper_case. Necessary if the field names in datasets built from Spark SQL queries does not correspond to the field names in Tarantool    | none          |
 
 #### Prerequisites
 
