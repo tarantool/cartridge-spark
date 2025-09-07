@@ -124,7 +124,7 @@ lazy val root = (project in file("."))
     ),
     // Publishing settings
     publishTo := {
-      val nexus = "https://oss.sonatype.org/"
+      val nexus = "https://ossrh-staging-api.central.sonatype.com/"
       if (isSnapshot.value)
         Some("snapshots".at(nexus + "content/repositories/snapshots"))
       else
