@@ -1,5 +1,6 @@
 import sbt.Keys._
 import sbtrelease.ReleaseStateTransformations._
+import xerial.sbt.Sonatype.sonatypeCentralHost
 
 val scala211 = "2.11.12"
 val scala212 = "2.12.16"
@@ -102,12 +103,22 @@ lazy val root = (project in file("."))
       "org.slf4j" % "slf4j-api" % "1.7.36" % Test
     ),
     // Compiler options
-    javacOptions ++= Seq(
-      "-source",
-      "1.8",
-      "-target",
-      "1.8"
-    ),
+    javacOptions ++= {
+      System.getProperty("java.version").startsWith("1.8") match {
+        case true =>
+          Seq(
+            "-source",
+            "1.8",
+            "-target",
+            "1.8"
+          )
+        case false =>
+          Seq(
+            "--release",
+            "8"
+          )
+      }
+    },
     scalacOptions ++= Seq(
       "-unchecked",
       "-deprecation",
@@ -124,23 +135,22 @@ lazy val root = (project in file("."))
     ),
     // Publishing settings
     publishTo := {
-      val nexus = "https://ossrh-staging-api.central.sonatype.com/"
-      if (isSnapshot.value)
-        Some("snapshots".at(nexus + "content/repositories/snapshots"))
-      else
-        Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
+      val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
+      if (isSnapshot.value) Some("central-snapshots".at(centralSnapshots))
+      else localStaging.value
     },
+    sonatypeCredentialHost := sonatypeCentralHost,
     publishMavenStyle := true,
     // Release settings
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
       inquireVersions,
       runClean,
-      releaseStepCommandAndRemaining("+test"),
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
       releaseStepCommandAndRemaining("+publishSigned"),
+      releaseStepCommand("sonatypeCentralUpload"),
       setNextVersion,
       commitNextVersion,
       pushChanges
